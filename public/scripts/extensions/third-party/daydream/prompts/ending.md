@@ -1,13 +1,25 @@
 用户要求结束当前故事。请基于当前剧本、当前状态、当前回合、关键选择和已触发事件生成结局结算。
 
 输出格式：
-【结局】
-结局标题：
-评级：S/B/C
-结局描述：
-人生轨迹总结：
-关键选择回顾：
-分享标题：
-个人评语：
+1. 先输出用户可见的结局正文，不要写结构标签。正文包括结局标题、评级、结局描述、人生轨迹总结、关键选择回顾、分享标题和个人评语。
+2. 末尾输出一个合法的 `<!-- DAYDREAM_META ... -->` JSON 注释块：
+
+<!-- DAYDREAM_META
+{
+  "title": "结局标题",
+  "screen": "结局镜头",
+  "status_changes": [],
+  "stats_delta": {},
+  "stats": {},
+  "events": ["结局已生成"],
+  "relationships": [],
+  "resources": [],
+  "active_hooks": [],
+  "pending_foreshadows": [],
+  "important_branches": [],
+  "options": [],
+  "is_ending": true
+}
+-->
 
 结局不得另起炉灶，必须体现当前玩法分类的核心回报。

@@ -534,7 +534,6 @@ function renderStoryPanel() {
             <h2>${escapeHtml(scene?.title || story?.title || '尚未入局')}</h2>
             <div class="daydream-screen">${escapeHtml(scene?.screen || story?.opening || '请选择故事，或输入自定义脑洞开始。')}</div>
             <div class="daydream-plot">${formatTextBlock(scene?.plot || '')}</div>
-            ${state.last_status_text ? `<div class="daydream-status-change">${formatTextBlock(state.last_status_text)}</div>` : ''}
         </section>
         <section class="daydream-options">
             ${optionHtml}
@@ -856,11 +855,57 @@ function getSection(text, label) {
     return String(text ?? '').match(pattern)?.[1]?.trim() ?? '';
 }
 
-function parseOptions(text) {
+function stripDayDreamMeta(text) {
+    return String(text ?? '')
+        .replace(/<!--\s*DAYDREAM_META[\s\S]*?-->/gi, '')
+        .replace(/<!--\s*DAYDREAM_META[\s\S]*$/i, '')
+        .replace(/<daydream_meta\b[\s\S]*?<\/daydream_meta>/gi, '')
+        .replace(/<daydream_meta\b[\s\S]*$/i, '')
+        .trim();
+}
+
+function parseDayDreamMeta(text) {
+    const source = String(text ?? '');
+    const raw = source.match(/<!--\s*DAYDREAM_META\s*([\s\S]*?)\s*-->/i)?.[1]?.trim()
+        ?? source.match(/<daydream_meta\b[^>]*>([\s\S]*?)<\/daydream_meta>/i)?.[1]?.trim();
+    if (!raw) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(raw);
+    } catch {
+        const json = raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+        try {
+            return JSON.parse(json);
+        } catch {
+            return null;
+        }
+    }
+}
+
+function normalizeOption(option, index) {
+    if (typeof option === 'string') {
+        return { index: index + 1, text: option.trim() };
+    }
+    if (option && typeof option === 'object') {
+        return { index: index + 1, text: String(option.text || option.label || option.action || '').trim() };
+    }
+    return { index: index + 1, text: '' };
+}
+
+function parseOptions(text, meta) {
+    if (Array.isArray(meta?.options)) {
+        return meta.options
+            .map(normalizeOption)
+            .filter(option => option.text && !/自定义输入/.test(option.text))
+            .slice(0, 4);
+    }
+
     const section = getSection(text, '行动选项');
     const options = [];
     for (const line of section.split('\n')) {
-        const match = line.match(/^\s*([1-4])[\.\、\:：]\s*(.+?)\s*$/);
+        const match = line.match(/^\s*([1-4])[.、:：]\s*(.+?)\s*$/);
         if (match) {
             const optionText = match[2].replace(/^选项\s*/, '').trim();
             if (optionText && !/自定义输入/.test(optionText)) {
@@ -871,26 +916,56 @@ function parseOptions(text) {
     return options.slice(0, 4);
 }
 
+function formatStatusChange(change) {
+    if (typeof change === 'string') {
+        return change;
+    }
+    if (!change || typeof change !== 'object') {
+        return String(change ?? '');
+    }
+
+    const key = change.key || change.stat;
+    const label = change.label || statLabels[key] || key || '状态';
+    const delta = Number(change.delta);
+    const deltaText = Number.isFinite(delta) && delta !== 0 ? `${delta > 0 ? '+' : ''}${delta}` : '';
+    const valueText = change.value !== undefined ? `（当前：${change.value}）` : '';
+    const reasonText = change.reason ? ` —— ${change.reason}` : '';
+    return `${label}${deltaText}${valueText}${reasonText}`;
+}
+
+function formatStatusChanges(meta, fallback) {
+    if (Array.isArray(meta?.status_changes) && meta.status_changes.length) {
+        return meta.status_changes.map(formatStatusChange).filter(Boolean).join('\n');
+    }
+    return fallback || '';
+}
+
 function parseScene(text) {
+    const meta = parseDayDreamMeta(text);
     const ending = getSection(text, '结局');
-    if (ending) {
+    if (ending || meta?.is_ending) {
         return {
-            title: '结局',
-            screen: '',
-            plot: ending,
-            status: '',
+            title: meta?.title || '结局',
+            screen: meta?.screen || '',
+            plot: stripDayDreamMeta(text) || ending,
+            status: formatStatusChanges(meta, ''),
             options: [],
             isEnding: true,
+            meta,
         };
     }
 
+    const visibleText = stripDayDreamMeta(text);
+    const legacyPlot = getSection(text, '剧情');
+    const plot = legacyPlot || visibleText || text;
     return {
-        title: getSection(text, '标题'),
-        screen: getSection(text, '画面'),
-        plot: getSection(text, '剧情'),
-        status: getSection(text, '状态变化'),
-        options: parseOptions(text),
-        isEnding: false,
+        title: meta?.title || getSection(text, '标题') || plot.split('\n').find(line => line.trim())?.slice(0, 16) || '',
+        screen: meta?.screen || getSection(text, '画面'),
+        plot,
+        status: formatStatusChanges(meta, getSection(text, '状态变化')),
+        options: parseOptions(text, meta),
+        isEnding: Boolean(meta?.is_ending),
+        meta,
     };
 }
 
@@ -934,9 +1009,13 @@ async function parseAssistantMessage(messageId, force = false) {
     state.last_options = scene.options;
     state.near_ending = !!scene.isEnding;
     state.stats.turn_count = Number(state.stats.turn_count || 0) + (scene.isEnding ? 0 : 1);
-    applyStatusText(scene.status);
+    if (scene.meta) {
+        applyMetaUpdates(scene.meta);
+    } else {
+        applyStatusText(scene.status);
+    }
 
-    if (scene.status) {
+    if (!scene.meta && scene.status) {
         state.triggered_events.unshift(scene.status);
         state.triggered_events = state.triggered_events.slice(0, 20);
     }
@@ -944,6 +1023,85 @@ async function parseAssistantMessage(messageId, force = false) {
     await saveState();
     updateInjection();
     renderAll();
+}
+
+function applyStatsObject(stats, mode) {
+    if (!stats || typeof stats !== 'object') {
+        return;
+    }
+
+    const state = getState();
+    for (const [key, value] of Object.entries(stats)) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) {
+            continue;
+        }
+        state.stats[key] = mode === 'delta' ? Number(state.stats[key] ?? 0) + number : number;
+    }
+}
+
+function toRecordList(value) {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .map(item => {
+            if (typeof item === 'string') {
+                return item.trim();
+            }
+            if (item && typeof item === 'object') {
+                return item;
+            }
+            return '';
+        })
+        .filter(Boolean);
+}
+
+function prependRecords(current, incoming, limit = 20) {
+    const records = [...toRecordList(incoming), ...(current ?? [])];
+    const seen = new Set();
+    return records.filter(item => {
+        const key = typeof item === 'string' ? item : JSON.stringify(item);
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.add(key);
+        return true;
+    }).slice(0, limit);
+}
+
+function applyMetaUpdates(meta) {
+    if (!meta || typeof meta !== 'object') {
+        return;
+    }
+
+    const state = getState();
+    applyStatsObject(meta.stats_delta, 'delta');
+    applyStatsObject(meta.stats, 'absolute');
+    if (Array.isArray(meta.status_changes)) {
+        for (const change of meta.status_changes) {
+            if (!change || typeof change !== 'object') {
+                continue;
+            }
+            const key = change.key || change.stat;
+            if (!key) {
+                continue;
+            }
+            if (change.value !== undefined) {
+                applyStatsObject({ [key]: change.value }, 'absolute');
+            } else if (change.delta !== undefined) {
+                applyStatsObject({ [key]: change.delta }, 'delta');
+            }
+        }
+    }
+
+    state.relationships = prependRecords(state.relationships, meta.relationships);
+    state.resources = prependRecords(state.resources, meta.resources);
+    state.triggered_events = prependRecords(state.triggered_events, meta.events);
+    state.active_hooks = prependRecords(state.active_hooks, meta.active_hooks);
+    state.pending_foreshadows = prependRecords(state.pending_foreshadows, meta.pending_foreshadows);
+    state.important_branches = prependRecords(state.important_branches, meta.important_branches);
 }
 
 function applyStatusText(status) {

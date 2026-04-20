@@ -272,7 +272,6 @@ function renderStory(state, story) {
             <h2>${escapeHtml(scene?.title || story?.title || '尚未入局')}</h2>
             <div class="dd-screen">${formatText(scene?.screen || story?.opening || '请选择故事，或输入自定义脑洞开始。')}</div>
             <div class="dd-plot">${formatText(scene?.plot || '')}</div>
-            ${state.last_status_text ? `<div class="dd-status">${formatText(state.last_status_text)}</div>` : ''}
         </section>
         <section class="dd-options">
             ${options.length ? options.map(option => `
@@ -490,7 +489,51 @@ function getSection(text, label) {
     return String(text ?? '').match(new RegExp(`【${label}】([\\s\\S]*?)(?=\\n?【[^】]+】|$)`))?.[1]?.trim() ?? '';
 }
 
-function parseOptions(text) {
+function stripDayDreamMeta(text) {
+    return String(text ?? '')
+        .replace(/<!--\s*DAYDREAM_META[\s\S]*?-->/gi, '')
+        .replace(/<!--\s*DAYDREAM_META[\s\S]*$/i, '')
+        .replace(/<daydream_meta\b[\s\S]*?<\/daydream_meta>/gi, '')
+        .replace(/<daydream_meta\b[\s\S]*$/i, '')
+        .trim();
+}
+
+function parseDayDreamMeta(text) {
+    const source = String(text ?? '');
+    const raw = source.match(/<!--\s*DAYDREAM_META\s*([\s\S]*?)\s*-->/i)?.[1]?.trim()
+        ?? source.match(/<daydream_meta\b[^>]*>([\s\S]*?)<\/daydream_meta>/i)?.[1]?.trim();
+    if (!raw) return null;
+
+    try {
+        return JSON.parse(raw);
+    } catch {
+        const json = raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+        try {
+            return JSON.parse(json);
+        } catch {
+            return null;
+        }
+    }
+}
+
+function normalizeOption(option, index) {
+    if (typeof option === 'string') {
+        return { index: index + 1, text: option.trim() };
+    }
+    if (option && typeof option === 'object') {
+        return { index: index + 1, text: String(option.text || option.label || option.action || '').trim() };
+    }
+    return { index: index + 1, text: '' };
+}
+
+function parseOptions(text, meta) {
+    if (Array.isArray(meta?.options)) {
+        return meta.options
+            .map(normalizeOption)
+            .filter(option => option.text && !/自定义输入/.test(option.text))
+            .slice(0, 4);
+    }
+
     return getSection(text, '行动选项')
         .split('\n')
         .map(line => line.match(/^\s*([1-4])[.、:：]\s*(.+?)\s*$/))
@@ -500,18 +543,53 @@ function parseOptions(text) {
         .slice(0, 4);
 }
 
-function parseReply(text) {
-    const ending = getSection(text, '结局');
-    if (ending) {
-        return { title: '结局', screen: '', plot: ending, status: '', options: [], isEnding: true };
+function formatStatusChange(change) {
+    if (typeof change === 'string') return change;
+    if (!change || typeof change !== 'object') return String(change ?? '');
+
+    const key = change.key || change.stat;
+    const label = change.label || statLabels[key] || key || '状态';
+    const delta = Number(change.delta);
+    const deltaText = Number.isFinite(delta) && delta !== 0 ? `${delta > 0 ? '+' : ''}${delta}` : '';
+    const valueText = change.value !== undefined ? `（当前：${change.value}）` : '';
+    const reasonText = change.reason ? ` —— ${change.reason}` : '';
+    return `${label}${deltaText}${valueText}${reasonText}`;
+}
+
+function formatStatusChanges(meta, fallback) {
+    if (Array.isArray(meta?.status_changes) && meta.status_changes.length) {
+        return meta.status_changes.map(formatStatusChange).filter(Boolean).join('\n');
     }
+    return fallback || '';
+}
+
+function parseReply(text) {
+    const meta = parseDayDreamMeta(text);
+    const ending = getSection(text, '结局');
+    if (ending || meta?.is_ending) {
+        const visibleEnding = stripDayDreamMeta(text) || ending;
+        return {
+            title: meta?.title || '结局',
+            screen: meta?.screen || '',
+            plot: visibleEnding,
+            status: formatStatusChanges(meta, ''),
+            options: [],
+            isEnding: true,
+            meta,
+        };
+    }
+
+    const visibleText = stripDayDreamMeta(text);
+    const legacyPlot = getSection(text, '剧情');
+    const plot = legacyPlot || visibleText || text;
     return {
-        title: getSection(text, '标题'),
-        screen: getSection(text, '画面'),
-        plot: getSection(text, '剧情') || text,
-        status: getSection(text, '状态变化'),
-        options: parseOptions(text),
-        isEnding: false,
+        title: meta?.title || getSection(text, '标题') || plot.split('\n').find(line => line.trim())?.slice(0, 16) || '',
+        screen: meta?.screen || getSection(text, '画面'),
+        plot,
+        status: formatStatusChanges(meta, getSection(text, '状态变化')),
+        options: parseOptions(text, meta),
+        isEnding: Boolean(meta?.is_ending),
+        meta,
     };
 }
 
@@ -527,15 +605,71 @@ function applyStatusText(state, status) {
     }
 }
 
+function applyStatsObject(state, stats, mode) {
+    if (!stats || typeof stats !== 'object') return;
+    for (const [key, value] of Object.entries(stats)) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) continue;
+        state.stats[key] = mode === 'delta' ? Number(state.stats[key] ?? 0) + number : number;
+    }
+}
+
+function toRecordList(value) {
+    if (!Array.isArray(value)) return [];
+    return value
+        .map(item => {
+            if (typeof item === 'string') return item.trim();
+            if (item && typeof item === 'object') return item;
+            return '';
+        })
+        .filter(Boolean);
+}
+
+function prependRecords(current, incoming, limit = 20) {
+    const records = [...toRecordList(incoming), ...(current ?? [])];
+    const seen = new Set();
+    return records.filter(item => {
+        const key = typeof item === 'string' ? item : JSON.stringify(item);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    }).slice(0, limit);
+}
+
+function applyMetaUpdates(state, meta) {
+    if (!meta || typeof meta !== 'object') return;
+
+    applyStatsObject(state, meta.stats_delta, 'delta');
+    applyStatsObject(state, meta.stats, 'absolute');
+    if (Array.isArray(meta.status_changes)) {
+        for (const change of meta.status_changes) {
+            if (!change || typeof change !== 'object') continue;
+            const key = change.key || change.stat;
+            if (!key) continue;
+            if (change.value !== undefined) {
+                applyStatsObject(state, { [key]: change.value }, 'absolute');
+            } else if (change.delta !== undefined) {
+                applyStatsObject(state, { [key]: change.delta }, 'delta');
+            }
+        }
+    }
+
+    state.relationships = prependRecords(state.relationships, meta.relationships);
+    state.resources = prependRecords(state.resources, meta.resources);
+    state.triggered_events = prependRecords(state.triggered_events, meta.events);
+    state.active_hooks = prependRecords(state.active_hooks, meta.active_hooks);
+    state.pending_foreshadows = prependRecords(state.pending_foreshadows, meta.pending_foreshadows);
+    state.important_branches = prependRecords(state.important_branches, meta.important_branches);
+}
+
 function renderStreamingReply(story, text) {
-    const scene = parseReply(text);
+    const liveBody = stripDayDreamMeta(text);
+
     qs('#dd_content').innerHTML = `
         <section class="dd-card">
             <div class="dd-kicker">${escapeHtml(story?.story_class || '生成中')}</div>
-            <h2>${escapeHtml(scene.title || '正在推进剧情')}</h2>
-            ${scene.screen ? `<div class="dd-screen">${formatText(scene.screen)}</div>` : ''}
-            <div class="dd-plot">${formatText(scene.plot || text || 'DayDream 正在生成下一幕...')}</div>
-            ${scene.status ? `<div class="dd-status">${formatText(scene.status)}</div>` : ''}
+            <h2>正在推进剧情</h2>
+            ${liveBody ? `<div class="dd-plot">${formatText(liveBody)}</div>` : '<div class="dd-empty">DayDream 正在生成下一幕...</div>'}
         </section>
     `;
 }
@@ -619,7 +753,7 @@ async function sendAction(text) {
         let lastPaint = 0;
         const data = await readDayDreamStream(response, (streamText) => {
             const now = Date.now();
-            if (now - lastPaint < 80) return;
+            if (now - lastPaint < 50) return;
             lastPaint = now;
             renderStreamingReply(story, streamText);
         });
@@ -634,10 +768,14 @@ async function sendAction(text) {
         state.last_options = scene.options;
         state.near_ending = scene.isEnding;
         state.stats.turn_count = Number(state.stats.turn_count || 0) + (scene.isEnding ? 0 : 1);
-        applyStatusText(state, scene.status);
-        if (scene.status) state.triggered_events = [scene.status, ...(state.triggered_events ?? [])].slice(0, 20);
+        if (scene.meta) {
+            applyMetaUpdates(state, scene.meta);
+        } else {
+            applyStatusText(state, scene.status);
+            if (scene.status) state.triggered_events = [scene.status, ...(state.triggered_events ?? [])].slice(0, 20);
+        }
 
-        saveHistory([...history, { role: 'user', content: message }, { role: 'assistant', content: data.text }]);
+        saveHistory([...history, { role: 'user', content: message }, { role: 'assistant', content: stripDayDreamMeta(data.text) || scene.plot }]);
         saveState(state);
         render();
     } catch (error) {
