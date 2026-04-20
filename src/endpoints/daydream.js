@@ -2,9 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import express from 'express';
+import fetch from 'node-fetch';
 
 import { serverDirectory } from '../server-directory.js';
-import { getConfigValue, safeReadFileSync } from '../util.js';
+import { forwardFetchResponse, getConfigValue, safeReadFileSync } from '../util.js';
 
 export const router = express.Router();
 
@@ -38,92 +39,6 @@ function getProfile(story, uiProfiles) {
         profile = mergeProfile(profile, story.ui_profile);
     }
     return profile;
-}
-
-function writeSse(response, event, data) {
-    response.write(`event: ${event}\n`);
-    response.write(`data: ${JSON.stringify(data)}\n\n`);
-    response.flush?.();
-}
-
-function getDeltaFromCompletionChunk(chunk) {
-    const choice = chunk?.choices?.[0];
-    return choice?.delta?.content ?? choice?.message?.content ?? choice?.text ?? '';
-}
-
-async function pipeCompletionStream(upstream, response, provider) {
-    const contentType = upstream.headers.get('content-type') ?? '';
-
-    response.status(200);
-    response.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-    response.setHeader('Cache-Control', 'no-cache, no-transform');
-    response.setHeader('Connection', 'keep-alive');
-    response.setHeader('X-Accel-Buffering', 'no');
-    response.flushHeaders?.();
-
-    if (!contentType.includes('text/event-stream')) {
-        const data = await upstream.json();
-        const text = data?.choices?.[0]?.message?.content ?? '';
-        if (text) {
-            writeSse(response, 'delta', { text });
-        }
-        writeSse(response, 'done', { text, model: provider.model });
-        response.end();
-        return;
-    }
-
-    const decoder = new TextDecoder('utf-8');
-    const reader = upstream.body?.getReader();
-    let pending = '';
-    let fullText = '';
-
-    if (!reader) {
-        writeSse(response, 'error', { error: 'DayDream provider did not return a readable stream.' });
-        response.end();
-        return;
-    }
-
-    const processLine = (line) => {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data:')) {
-            return;
-        }
-
-        const payload = trimmed.slice(5).trim();
-        if (!payload || payload === '[DONE]') {
-            return;
-        }
-
-        try {
-            const delta = getDeltaFromCompletionChunk(JSON.parse(payload));
-            if (delta) {
-                fullText += delta;
-                writeSse(response, 'delta', { text: delta });
-            }
-        } catch {
-            // Ignore keepalive or provider-specific event frames that are not completion chunks.
-        }
-    };
-
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        pending += decoder.decode(value, { stream: true });
-        const lines = pending.split(/\r?\n/);
-        pending = lines.pop() ?? '';
-        for (const line of lines) {
-            processLine(line);
-        }
-    }
-
-    pending += decoder.decode();
-    for (const line of pending.split(/\r?\n/)) {
-        processLine(line);
-    }
-
-    writeSse(response, 'done', { text: fullText, model: provider.model });
-    response.end();
 }
 
 function readJson(filePath, fallback) {
@@ -306,11 +221,14 @@ router.post('/generate', async (request, response) => {
             return response.status(502).json({ error: 'DayDream provider request failed.' });
         }
 
-        return pipeCompletionStream(upstream, response, provider);
+        response.setHeader('Content-Type', upstream.headers.get('content-type') || 'text/event-stream; charset=utf-8');
+        response.setHeader('Cache-Control', 'no-cache, no-transform');
+        response.setHeader('X-Accel-Buffering', 'no');
+        response.setHeader('X-DayDream-Model', provider.model);
+        return forwardFetchResponse(upstream, response);
     } catch (error) {
         console.error('DayDream generation failed:', error);
         if (response.headersSent) {
-            writeSse(response, 'error', { error: 'DayDream generation failed.' });
             return response.end();
         }
         return response.status(500).json({ error: 'DayDream generation failed.' });

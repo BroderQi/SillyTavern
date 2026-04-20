@@ -1,3 +1,5 @@
+import EventSourceStream from './sse-core-stream.js';
+
 const STORAGE_KEY = 'daydream_public_state_v1';
 const HISTORY_KEY = 'daydream_public_history_v1';
 
@@ -538,63 +540,43 @@ function renderStreamingReply(story, text) {
     `;
 }
 
-function parseSseEvent(rawEvent) {
-    const lines = rawEvent.split(/\r?\n/);
-    const event = lines.find(line => line.startsWith('event:'))?.slice(6).trim() || 'message';
-    const data = lines
-        .filter(line => line.startsWith('data:'))
-        .map(line => line.slice(5).trimStart())
-        .join('\n');
-
-    return { event, data };
-}
-
 async function readDayDreamStream(response, onDelta) {
     const contentType = response.headers.get('content-type') ?? '';
     if (!response.body || !contentType.includes('text/event-stream')) {
-        return response.json();
+        const data = await response.json();
+        return {
+            text: data?.text ?? data?.choices?.[0]?.message?.content ?? '',
+            model: data?.model ?? '',
+        };
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let pending = '';
+    const eventStream = new EventSourceStream();
+    response.body.pipeThrough(eventStream);
+    const reader = eventStream.readable.getReader();
     let fullText = '';
-    let model = '';
-
-    const dispatch = (rawEvent) => {
-        if (!rawEvent.trim()) return;
-        const { event, data } = parseSseEvent(rawEvent);
-        if (!data) return;
-
-        const payload = JSON.parse(data);
-        if (event === 'error') {
-            throw new Error(payload.error || '生成失败');
-        }
-        if (event === 'delta') {
-            fullText += payload.text || '';
-            onDelta(fullText);
-        }
-        if (event === 'done') {
-            fullText = payload.text ?? fullText;
-            model = payload.model ?? model;
-            onDelta(fullText);
-        }
-    };
+    let model = response.headers.get('x-daydream-model') || '';
 
     while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        pending += decoder.decode(value, { stream: true });
-        const events = pending.split(/\r?\n\r?\n/);
-        pending = events.pop() ?? '';
-        for (const event of events) {
-            dispatch(event);
+        const rawData = value.data;
+        if (rawData === '[DONE]') break;
+
+        const payload = JSON.parse(rawData);
+        if (payload?.error) {
+            throw new Error(payload.error?.message || payload.error || '生成失败');
         }
+
+        const choice = payload?.choices?.[0];
+        const delta = choice?.delta?.content ?? choice?.message?.content ?? choice?.text ?? '';
+        model ||= payload?.model ?? '';
+        if (!delta) continue;
+
+        fullText += delta;
+        onDelta(fullText);
     }
 
-    pending += decoder.decode();
-    dispatch(pending);
     return { text: fullText, model };
 }
 
