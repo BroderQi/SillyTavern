@@ -1,0 +1,11 @@
+{
+    "display_name": "DayDream",
+    "loading_order": 99,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "DayDream",
+    "version": "0.1.0",
+    "homePage": "https://github.com/SillyTavern/SillyTavern"
+}

@@ -1,0 +1,33 @@
+<div id="daydream_settings" class="daydream-settings-block">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <div class="flex-container alignitemscenter margin0">
+                <b>DayDream 世界引擎</b>
+            </div>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <label class="checkbox_label" for="daydream_enabled">
+                <input id="daydream_enabled" type="checkbox" />
+                <span>启用 DayDream UI</span>
+            </label>
+            <div class="flex-container flexGap5 flexWrap">
+                <div id="daydream_open_panel" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-window-maximize"></i>
+                    <span>打开面板</span>
+                </div>
+                <div id="daydream_pick_story" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>选择故事</span>
+                </div>
+                <div id="daydream_reset_state" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>重置状态</span>
+                </div>
+            </div>
+            <label for="daydream_injection_depth">状态注入深度</label>
+            <input id="daydream_injection_depth" class="text_pole widthUnset" type="number" min="0" max="20" value="1" />
+            <small>建议保持 1-2。核心规则在主提示词前注入，当前状态在近聊天深度注入。</small>
+        </div>
+    </div>
+</div>

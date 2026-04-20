@@ -1,0 +1,121 @@
+{
+    "通用": {
+        "top_stats": [
+            { "key": "turn_count", "label": "回合", "icon": "clock" },
+            { "key": "risk_level", "label": "风险", "icon": "triangle-exclamation" },
+            { "key": "trust_level", "label": "信任", "icon": "heart" },
+            { "key": "social_status", "label": "地位", "icon": "scale-balanced" }
+        ],
+        "tabs": [
+            { "key": "story", "label": "剧情", "icon": "book-open" },
+            { "key": "relations", "label": "人脉", "icon": "users" },
+            { "key": "messages", "label": "手机", "icon": "mobile-screen" },
+            { "key": "stats", "label": "属性", "icon": "user" },
+            { "key": "events", "label": "事件", "icon": "flag" },
+            { "key": "inventory", "label": "资产", "icon": "box-open" },
+            { "key": "settings", "label": "设置", "icon": "gear" }
+        ]
+    },
+    "权谋博弈": {
+        "top_stats": [
+            { "key": "turn_count", "label": "回合", "icon": "clock" },
+            { "key": "prestige", "label": "威望", "icon": "crown" },
+            { "key": "leverage", "label": "筹码", "icon": "chess-knight" },
+            { "key": "risk_level", "label": "风险", "icon": "triangle-exclamation" }
+        ],
+        "tabs": [
+            { "key": "story", "label": "剧情", "icon": "book-open" },
+            { "key": "relations", "label": "人脉", "icon": "users" },
+            { "key": "messages", "label": "书信", "icon": "envelope" },
+            { "key": "stats", "label": "筹码", "icon": "scale-balanced" },
+            { "key": "events", "label": "事件", "icon": "flag" },
+            { "key": "inventory", "label": "府库", "icon": "box-open" },
+            { "key": "settings", "label": "设置", "icon": "gear" }
+        ]
+    },
+    "危机求生": {
+        "top_stats": [
+            { "key": "turn_count", "label": "回合", "icon": "clock" },
+            { "key": "health", "label": "生命", "icon": "heart-pulse" },
+            { "key": "energy", "label": "体力", "icon": "battery-half" },
+            { "key": "supplies", "label": "物资", "icon": "kit-medical" },
+            { "key": "risk_level", "label": "风险", "icon": "triangle-exclamation" }
+        ],
+        "tabs": [
+            { "key": "story", "label": "剧情", "icon": "book-open" },
+            { "key": "relations", "label": "队伍", "icon": "users" },
+            { "key": "messages", "label": "地图", "icon": "map" },
+            { "key": "stats", "label": "状态", "icon": "heart-pulse" },
+            { "key": "events", "label": "事件", "icon": "flag" },
+            { "key": "inventory", "label": "物资", "icon": "box-open" },
+            { "key": "settings", "label": "设置", "icon": "gear" }
+        ]
+    },
+    "悬疑烧脑": {
+        "top_stats": [
+            { "key": "turn_count", "label": "回合", "icon": "clock" },
+            { "key": "focus", "label": "精力", "icon": "eye" },
+            { "key": "clues", "label": "线索", "icon": "magnifying-glass" },
+            { "key": "risk_level", "label": "风险", "icon": "triangle-exclamation" }
+        ],
+        "tabs": [
+            { "key": "story", "label": "剧情", "icon": "book-open" },
+            { "key": "relations", "label": "人物", "icon": "users" },
+            { "key": "messages", "label": "线索", "icon": "magnifying-glass" },
+            { "key": "stats", "label": "状态", "icon": "user" },
+            { "key": "events", "label": "案件", "icon": "folder-open" },
+            { "key": "inventory", "label": "证物", "icon": "box-archive" },
+            { "key": "settings", "label": "设置", "icon": "gear" }
+        ]
+    },
+    "情感拉扯": {
+        "top_stats": [
+            { "key": "turn_count", "label": "回合", "icon": "clock" },
+            { "key": "mood", "label": "心绪", "icon": "heart" },
+            { "key": "affection", "label": "好感", "icon": "hand-holding-heart" },
+            { "key": "tension", "label": "拉扯", "icon": "bolt" }
+        ],
+        "tabs": [
+            { "key": "story", "label": "剧情", "icon": "book-open" },
+            { "key": "relations", "label": "关系", "icon": "users" },
+            { "key": "messages", "label": "消息", "icon": "comments" },
+            { "key": "stats", "label": "属性", "icon": "user" },
+            { "key": "events", "label": "事件", "icon": "flag" },
+            { "key": "inventory", "label": "纪念", "icon": "box-open" },
+            { "key": "settings", "label": "设置", "icon": "gear" }
+        ]
+    },
+    "治愈成长": {
+        "top_stats": [
+            { "key": "turn_count", "label": "回合", "icon": "clock" },
+            { "key": "energy", "label": "心力", "icon": "seedling" },
+            { "key": "trust_level", "label": "信任", "icon": "heart" },
+            { "key": "growth", "label": "成长", "icon": "arrow-trend-up" }
+        ]
+    },
+    "经营积累": {
+        "top_stats": [
+            { "key": "turn_count", "label": "回合", "icon": "clock" },
+            { "key": "cashflow", "label": "现金", "icon": "coins" },
+            { "key": "reputation", "label": "声望", "icon": "star" },
+            { "key": "risk_level", "label": "风险", "icon": "triangle-exclamation" }
+        ],
+        "tabs": [
+            { "key": "story", "label": "剧情", "icon": "book-open" },
+            { "key": "relations", "label": "人脉", "icon": "users" },
+            { "key": "messages", "label": "通讯", "icon": "mobile-screen" },
+            { "key": "stats", "label": "能力", "icon": "chart-line" },
+            { "key": "events", "label": "项目", "icon": "flag" },
+            { "key": "inventory", "label": "资产", "icon": "box-open" },
+            { "key": "settings", "label": "设置", "icon": "gear" }
+        ]
+    },
+    "打脸逆袭": {
+        "top_stats": [
+            { "key": "turn_count", "label": "回合", "icon": "clock" },
+            { "key": "energy", "label": "体力", "icon": "heart-pulse" },
+            { "key": "reputation", "label": "声望", "icon": "star" },
+            { "key": "leverage", "label": "筹码", "icon": "chess-knight" }
+        ]
+    }
+}

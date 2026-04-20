@@ -1,0 +1,1802 @@
+[
+    {
+        "id":  1,
+        "title":  "小城往事",
+        "spacetime":  "1980 年代北方县城单位熟人社会",
+        "theme":  "体制边缘生存与站队博弈",
+        "protagonist_setup":  "刚进体系边缘的年轻人，想上爬又怕站错队",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "不能越级摊牌",
+                                   "风向变化先于正式文件",
+                                   "熟人社会放大表态"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：第一次站队机会摆到面前"
+    },
+    {
+        "id":  2,
+        "title":  "霓虹失真",
+        "spacetime":  "近未来巨型城市与数据化企业系统",
+        "theme":  "异常数据追查与权限博弈",
+        "protagonist_setup":  "底层技术执行者拿到异常入口日志",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "所有操作留痕",
+                                   "公司与黑市都在追权限",
+                                   "真相越深压力越大"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "细腻沉浸",
+        "route":  "suspense_investigation",
+        "opening":  "开场：失效入口突然亮起"
+    },
+    {
+        "id":  3,
+        "title":  "镜头之外",
+        "spacetime":  "现代短剧娱乐工业",
+        "theme":  "机会争夺与情感拉扯",
+        "protagonist_setup":  "风口边缘行业新人",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "曝光窗口极短",
+                                   "一句话一个镜头都可能改命",
+                                   "得罪关键人立刻失去机会"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "情感拉扯",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：主演安排突然失衡"
+    },
+    {
+        "id":  4,
+        "title":  "黑潮会计",
+        "spacetime":  "当代金融科技集团审计前夜",
+        "theme":  "职场权谋与证据争夺",
+        "protagonist_setup":  "被边缘化运营负责人",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "不能明显违法",
+                                   "监控审计可追溯",
+                                   "越级动作会被放大"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：工位被人动过"
+    },
+    {
+        "id":  5,
+        "title":  "雨港追凶",
+        "spacetime":  "1998 南方港城",
+        "theme":  "悬案追查与旧案翻面",
+        "protagonist_setup":  "被调离核心案组的年轻刑警",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "程序正义限制速度",
+                                   "旧人情盘根错节",
+                                   "越近真相越易被反咬"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "写实压迫",
+        "route":  "suspense_investigation",
+        "opening":  "开场：旧案物证重现码头"
+    },
+    {
+        "id":  6,
+        "title":  "雪线撤离",
+        "spacetime":  "现代高原雪灾封锁区",
+        "theme":  "撤离生存与责任抉择",
+        "protagonist_setup":  "基层应急通信员",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "物资极少",
+                                   "天气窗口极短",
+                                   "错误调度会致伤亡"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：最后一条通信链路闪烁"
+    },
+    {
+        "id":  7,
+        "title":  "末日断电夜",
+        "spacetime":  "城市电网崩溃后的后末日地铁网络",
+        "theme":  "资源争夺与求生逃离",
+        "protagonist_setup":  "会修线路的普通维修工",
+        "system_type":  "任务",
+        "custom_constraints":  [
+                                   "系统只给方向不救命",
+                                   "奖励有限",
+                                   "地上地下都不安全"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：收到第一条生存任务"
+    },
+    {
+        "id":  8,
+        "title":  "王朝暗潮",
+        "spacetime":  "架空古代王朝深宫与外廷交界",
+        "theme":  "失势后的权力回收与关系清算",
+        "protagonist_setup":  "家族失势贵女",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "不能调兵",
+                                   "后宫外廷消息不对称",
+                                   "名声受损影响全部筹码"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "细腻沉浸",
+        "route":  "power_game",
+        "opening":  "开场：婚约将被拿去换派系利益"
+    },
+    {
+        "id":  9,
+        "title":  "古驿签到令",
+        "spacetime":  "穿越后的古代边驿体系",
+        "theme":  "长期积累逆袭",
+        "protagonist_setup":  "现代人穿成边驿小吏",
+        "system_type":  "签到",
+        "custom_constraints":  [
+                                   "奖励偏长期",
+                                   "不能公开暴露异常能力",
+                                   "边驿失守会断节奏"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：破驿站竟是签到系统第一起点"
+    },
+    {
+        "id":  10,
+        "title":  "白塔婚约",
+        "spacetime":  "架空海港城邦贵族社交季",
+        "theme":  "政治联姻中的情感拉扯",
+        "protagonist_setup":  "被推上婚约谈判桌的次女",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "婚约牵连多方利益",
+                                   "感情公开引发站队",
+                                   "失礼会被放大"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "情感拉扯",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：长廊先见到最不该见的人"
+    },
+    {
+        "id":  11,
+        "title":  "玻璃海校舍",
+        "spacetime":  "当代沿海重点高中寄宿校园",
+        "theme":  "关系修复与成长压力",
+        "protagonist_setup":  "因家庭变故转学的高三学生",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "成绩压力持续",
+                                   "校园名声传播快",
+                                   "亲密关系建立需要时间"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "治愈成长",
+        "style":  "细腻沉浸",
+        "route":  "healing_growth",
+        "opening":  "开场：课本里被塞旧事便签"
+    },
+    {
+        "id":  12,
+        "title":  "归雾农场",
+        "spacetime":  "气候异常后的近未来沿海乡镇",
+        "theme":  "返乡经营与生态求生",
+        "protagonist_setup":  "辞职返乡育种师",
+        "system_type":  "成就",
+        "custom_constraints":  [
+                                   "系统只记录成果不代执行",
+                                   "天气与资金窗口都短",
+                                   "地方人情影响经营"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "细腻沉浸",
+        "route":  "healing_growth",
+        "opening":  "开场：幼苗因盐风倒灌发黄"
+    },
+    {
+        "id":  13,
+        "title":  "星港赎回",
+        "spacetime":  "远未来自由星港与债务契约文明",
+        "theme":  "负债求生与船队重建",
+        "protagonist_setup":  "失去船与信誉的年轻舰长",
+        "system_type":  "成就",
+        "custom_constraints":  [
+                                   "债务利息滚动",
+                                   "信用比武力更要命",
+                                   "船员忠诚靠公平分配与连续胜利"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "爽文推进",
+        "route":  "general_story",
+        "opening":  "开场：4 小时内不签合同旧船就拆"
+    },
+    {
+        "id":  14,
+        "title":  "记忆拍卖行",
+        "spacetime":  "多元宇宙缝隙中的记忆交易都市",
+        "theme":  "真相与身份修复",
+        "protagonist_setup":  "修复记忆片段的年轻技师",
+        "system_type":  "特殊物品",
+        "custom_constraints":  [
+                                   "读取记忆污染自我认知",
+                                   "高价记忆背后必有势力",
+                                   "删去真相会反噬"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "细腻沉浸",
+        "route":  "immersive_novel",
+        "opening":  "开场：匿名记忆样本里出现自己的脸"
+    },
+    {
+        "id":  15,
+        "title":  "轴心迷城",
+        "spacetime":  "架空历史战时中立都市",
+        "theme":  "谍战潜伏与情报交换",
+        "protagonist_setup":  "表面翻译员实为双面情报中转者",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "情报交换要代价",
+                                   "身份暴露不可逆",
+                                   "不能相信单一线人"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "写实压迫",
+        "route":  "suspense_investigation",
+        "opening":  "开场：翻译稿夹暗码送件人失踪"
+    },
+    {
+        "id":  16,
+        "title":  "都市神豪试错录",
+        "spacetime":  "当代中国城市现实社会",
+        "theme":  "暴富实验与财富认知试错",
+        "protagonist_setup":  "普通人突然获得一千万现金",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "一千万只能改变起点",
+                                   "没有顶层认知和人脉",
+                                   "钱花越快越易暴露失误"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "打脸逆袭",
+        "style":  "写实压迫",
+        "route":  "short_drama",
+        "opening":  "开场：到账后第一批“规划人生”的人找上门"
+    },
+    {
+        "id":  17,
+        "title":  "红利回潮",
+        "spacetime":  "1980 到 2000 年代中国现实社会",
+        "theme":  "时代穿越红利与长期布局",
+        "protagonist_setup":  "带 2026 博士级知识穿越回 1980 年代的主角",
+        "system_type":  "知识穿越",
+        "custom_constraints":  [
+                                   "红利有时间窗口",
+                                   "未来知识不能替代资源人脉执行团队",
+                                   "踩中风口会带来新风险"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：确认年份后意识到第一波窗口时间极短"
+    },
+    {
+        "id":  18,
+        "title":  "魔塔失序",
+        "spacetime":  "高魔世界学院高塔与失控秘库",
+        "theme":  "知识追查与魔法灾变",
+        "protagonist_setup":  "负责抄录禁书的低阶学徒",
+        "system_type":  "学霸学习",
+        "custom_constraints":  [
+                                   "会背公式不等于能驾驭法术",
+                                   "高阶法术必须付代价",
+                                   "塔内规则失序会反噬"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "细腻沉浸",
+        "route":  "suspense_investigation",
+        "opening":  "开场：禁书页码自改且你抄过的那页消失"
+    },
+    {
+        "id":  19,
+        "title":  "深井公寓",
+        "spacetime":  "现代都市边缘老旧高层公寓",
+        "theme":  "规则怪谈与邻里异变",
+        "protagonist_setup":  "新上任夜班管理员",
+        "system_type":  "规则手册",
+        "custom_constraints":  [
+                                   "手册不一定全真但不能无视",
+                                   "违反时间规则有不可解释后果",
+                                   "住户信息高度不对称"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "黑色幽默",
+        "route":  "suspense_investigation",
+        "opening":  "开场：手册写着凌晨两点后不要回应电梯求助声"
+    },
+    {
+        "id":  20,
+        "title":  "铜雀码头",
+        "spacetime":  "近代租界与码头黑市并存的沿江商埠",
+        "theme":  "地下世界生存与账目博弈",
+        "protagonist_setup":  "表面只会算账、实际替两边记账的账房先生",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "不能轻易动枪惊动巡捕",
+                                   "帮派信用和账目同样重要",
+                                   "背叛会引发连锁清算"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "黑色幽默",
+        "route":  "power_game",
+        "opening":  "开场：账本多出一页假账能决定谁先被沉江"
+    },
+    {
+        "id":  21,
+        "title":  "药局风起",
+        "spacetime":  "1932 年沪上租界与华界交错街区",
+        "theme":  "商战经营与灰色势力周旋",
+        "protagonist_setup":  "父亲骤亡后接手老药铺的学徒少东家",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "药材渠道被掐就断生路",
+                                   "巡捕与帮会都要打点",
+                                   "赊账名单藏着命门"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：账房交来一张足以封店的旧欠条"
+    },
+    {
+        "id":  22,
+        "title":  "碎雪电台",
+        "spacetime":  "1994 年北境边城与山地口岸",
+        "theme":  "政治谍战与失踪线索追查",
+        "protagonist_setup":  "临时顶班的县广播站播音员",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "错误播报会引发边境恐慌",
+                                   "你知道的信息被多人监听",
+                                   "旧档案不能公开借阅"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "写实压迫",
+        "route":  "suspense_investigation",
+        "opening":  "开场：午夜插播里突然混进一段求救坐标"
+    },
+    {
+        "id":  23,
+        "title":  "月河盐票案",
+        "spacetime":  "清末通商河道与盐运商镇",
+        "theme":  "账目造假与官商勾连",
+        "protagonist_setup":  "被贬回乡的票号账房",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "盐引制度决定生死",
+                                   "得罪河运总办会被断路",
+                                   "真账本一旦现世就有人先死"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：一张过期盐票竟盖着明天才该启用的官印"
+    },
+    {
+        "id":  24,
+        "title":  "锦城旧梦楼",
+        "spacetime":  "1936 年西南山城戏院与电台圈",
+        "theme":  "机会争夺与旧情复燃",
+        "protagonist_setup":  "戏班替补旦角兼电台配音新人",
+        "system_type":  "好感度攻略",
+        "custom_constraints":  [
+                                   "台上一句唱错就失去翻身机会",
+                                   "情感公开会毁掉合约",
+                                   "名角的赏识带着代价"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "情感拉扯",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：主角突然失声，压轴唱段落到你头上"
+    },
+    {
+        "id":  25,
+        "title":  "寒炉铁券",
+        "spacetime":  "架空边塞王朝军工重镇",
+        "theme":  "战时军需与派系挤压",
+        "protagonist_setup":  "被贬到军械司的年轻造甲官",
+        "system_type":  "知识穿越",
+        "custom_constraints":  [
+                                   "懂工艺不等于能动军令",
+                                   "军资短缺会逼人造假",
+                                   "试图自保可能被扣通敌帽子"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：前线急报催甲，而库房里少了三成铁料"
+    },
+    {
+        "id":  26,
+        "title":  "春汛渡口",
+        "spacetime":  "1978 年南方江镇与客货码头",
+        "theme":  "返乡创业与时代窗口试探",
+        "protagonist_setup":  "退伍返乡的船工之子",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "政策口风先变生意才敢动",
+                                   "人情借贷一旦失信就翻不了身",
+                                   "水运事故会直接吞掉本金"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：第一批乡镇货单到了，但你没有合法船票"
+    },
+    {
+        "id":  27,
+        "title":  "深巷裁缝局",
+        "spacetime":  "1992 年内陆县城服装市场",
+        "theme":  "手艺翻身与公开打脸",
+        "protagonist_setup":  "被国营厂挤走的女裁缝",
+        "system_type":  "成就",
+        "custom_constraints":  [
+                                   "布料赊账有周期",
+                                   "爆款也要防人抄版",
+                                   "得罪批发商会被断货"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "打脸逆袭",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：前东家把你新做的样衣挂在自家橱窗里"
+    },
+    {
+        "id":  28,
+        "title":  "雾港夜巡",
+        "spacetime":  "2003 年南方港城旧城区",
+        "theme":  "悬案追查与街巷人情博弈",
+        "protagonist_setup":  "夜班巡逻辅警",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "没有正式权限不能乱查",
+                                   "街坊口供彼此包庇",
+                                   "旧案翻出来会触怒现任"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "写实压迫",
+        "route":  "suspense_investigation",
+        "opening":  "开场：失踪十年的摩托车牌在雨巷里重新出现"
+    },
+    {
+        "id":  29,
+        "title":  "玉京司南",
+        "spacetime":  "架空古代都城与星象官署",
+        "theme":  "朝局试探与灾兆解读",
+        "protagonist_setup":  "被排挤进司天监的年轻女官",
+        "system_type":  "特殊物品",
+        "custom_constraints":  [
+                                   "天象解释会影响朝议",
+                                   "预言说错先丢官再丢命",
+                                   "唯一可用的古盘来路不明"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "细腻沉浸",
+        "route":  "power_game",
+        "opening":  "开场：天盘忽然倒转，偏偏只被你一个人看见"
+    },
+    {
+        "id":  30,
+        "title":  "玻璃温室协议",
+        "spacetime":  "近未来生物农业园区",
+        "theme":  "技术创业与专利围堵",
+        "protagonist_setup":  "欠债的温室系统工程师",
+        "system_type":  "成就",
+        "custom_constraints":  [
+                                   "专利纠纷足以拖死创业团队",
+                                   "极端天气让试种窗口极短",
+                                   "投资人要控制权不是帮忙"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "细腻沉浸",
+        "route":  "general_story",
+        "opening":  "开场：试验温室刚出第一批数据，原公司法务就堵到门口"
+    },
+    {
+        "id":  31,
+        "title":  "极昼站台",
+        "spacetime":  "近未来极地物流中转站",
+        "theme":  "封站危机与撤离抉择",
+        "protagonist_setup":  "负责列车编组的基层调度员",
+        "system_type":  "任务",
+        "custom_constraints":  [
+                                   "极昼风暴会切断补给",
+                                   "误发一条调度指令就死人",
+                                   "上层在隐瞒真实撤离名单"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：最后一班出站车突然多出一节未登记冷柜"
+    },
+    {
+        "id":  32,
+        "title":  "潮汐档案馆",
+        "spacetime":  "多元宇宙交汇海城",
+        "theme":  "失真档案与身份追查",
+        "protagonist_setup":  "给跨界来客做身份归档的实习员",
+        "system_type":  "特殊物品",
+        "custom_constraints":  [
+                                   "档案错误会引发时空排斥",
+                                   "馆内规则不允许你公开比对自己",
+                                   "每翻一份封档都会被某人记一笔"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "细腻沉浸",
+        "route":  "immersive_novel",
+        "opening":  "开场：一份今天新到的档案写着你三天后的死因"
+    },
+    {
+        "id":  33,
+        "title":  "雨巷修表店",
+        "spacetime":  "当代旧城区背街",
+        "theme":  "亲情修复与小店维持",
+        "protagonist_setup":  "替父亲守店的失业女儿",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "老客流失就撑不过下个月",
+                                   "旧债压得你不敢关店",
+                                   "每块旧表都牵出一段不愿碰的关系"
+                               ],
+        "meta_theme":  "治愈成长",
+        "story_class":  "治愈成长",
+        "style":  "细腻沉浸",
+        "route":  "healing_growth",
+        "opening":  "开场：一块停了十年的手表忽然在雨夜自己走了"
+    },
+    {
+        "id":  34,
+        "title":  "烟岚书院",
+        "spacetime":  "架空古代山城书院",
+        "theme":  "成长试炼与名望恢复",
+        "protagonist_setup":  "因家族受牵连被贬来的少年学子",
+        "system_type":  "学霸学习",
+        "custom_constraints":  [
+                                   "考试名次决定去留",
+                                   "书院派系会借题排挤",
+                                   "你最擅长的文章正是禁题方向"
+                               ],
+        "meta_theme":  "治愈成长",
+        "story_class":  "治愈成长",
+        "style":  "细腻沉浸",
+        "route":  "healing_growth",
+        "opening":  "开场：开学第一天，你的座位被故意挪到末席角落"
+    },
+    {
+        "id":  35,
+        "title":  "北城竞标夜",
+        "spacetime":  "当代北方省会城建系统",
+        "theme":  "竞标权斗与责任切割",
+        "protagonist_setup":  "刚升任项目副经理的基层执行者",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "所有会议纪要都可追责",
+                                   "站错队会被直接踢出项目",
+                                   "工程延期每天都在烧钱"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：标书锁柜被撬过，但监控偏偏坏在那十分钟"
+    },
+    {
+        "id":  36,
+        "title":  "逆旅直播间",
+        "spacetime":  "当代直播电商行业",
+        "theme":  "流量争夺与逆袭翻盘",
+        "protagonist_setup":  "替人打杂的幕后脚本助理",
+        "system_type":  "神豪消费",
+        "custom_constraints":  [
+                                   "平台分发极度短期",
+                                   "观众喜欢反转胜过真相",
+                                   "你花出去的每一笔钱都会暴露野心"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "打脸逆袭",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：原定主播临阵跑路，热搜却已经买好了"
+    },
+    {
+        "id":  37,
+        "title":  "灰塔实习生",
+        "spacetime":  "近未来算法审查巨企",
+        "theme":  "合规调查与真相逼近",
+        "protagonist_setup":  "被外包进核心审查组的新人",
+        "system_type":  "幕后黑手",
+        "custom_constraints":  [
+                                   "你能看见系统标红原因但不能外传",
+                                   "一次误判会毁掉他人人生",
+                                   "越接近源头越像被故意引导"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "写实压迫",
+        "route":  "suspense_investigation",
+        "opening":  "开场：一条本该自动封禁的内容竟精准写出你的童年地址"
+    },
+    {
+        "id":  38,
+        "title":  "旧操场来信",
+        "spacetime":  "当代重点高中毕业班",
+        "theme":  "旧伤修复与关系回暖",
+        "protagonist_setup":  "被迫回母校复读的前优等生",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "成绩波动会放大所有传言",
+                                   "曾经的朋友并不想见你",
+                                   "你想绕开的旧事每天都在教室里"
+                               ],
+        "meta_theme":  "治愈成长",
+        "story_class":  "治愈成长",
+        "style":  "细腻沉浸",
+        "route":  "healing_growth",
+        "opening":  "开场：晨跑时，有人把一封没署名的旧信塞进你口袋"
+    },
+    {
+        "id":  39,
+        "title":  "龙骨船队",
+        "spacetime":  "远未来边境采矿星海",
+        "theme":  "船队求生与信誉重建",
+        "protagonist_setup":  "第一次带队出远航的替补领航员",
+        "system_type":  "荣辱与共",
+        "custom_constraints":  [
+                                   "燃料和氧气都按小时算",
+                                   "船员信任一旦跌破底线就会离心",
+                                   "任何短线暴利都可能毁掉返程"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "爽文推进",
+        "route":  "general_story",
+        "opening":  "开场：旗舰主引擎在跃迁前一刻报出伪造保养记录"
+    },
+    {
+        "id":  40,
+        "title":  "零点食堂",
+        "spacetime":  "当代大学附属医院后厨与住院楼",
+        "theme":  "夜间传闻与异常死亡调查",
+        "protagonist_setup":  "刚转正的后勤营养师",
+        "system_type":  "规则手册",
+        "custom_constraints":  [
+                                   "住院楼夜班规定不能乱破",
+                                   "后厨监控总会少一段",
+                                   "每多问一个人就多一条版本"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "黑色幽默",
+        "route":  "suspense_investigation",
+        "opening":  "开场：凌晨零点，多做出来的那份病号餐被人提前签收了"
+    },
+    {
+        "id":  41,
+        "title":  "山神旧契",
+        "spacetime":  "奇幻山城与废弃祖庙",
+        "theme":  "契约真相与村落异变",
+        "protagonist_setup":  "新上任的见习庙祝",
+        "system_type":  "特殊物品",
+        "custom_constraints":  [
+                                   "旧契一旦续签就不可轻毁",
+                                   "山里每个人都知道得比你多",
+                                   "神异帮助必然索价"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "细腻沉浸",
+        "route":  "immersive_novel",
+        "opening":  "开场：供桌下压着一份写有你名字的旧契纸"
+    },
+    {
+        "id":  42,
+        "title":  "海崖观测所",
+        "spacetime":  "近未来海岛气候观测站",
+        "theme":  "极端天气与求生调度",
+        "protagonist_setup":  "临时代班的气象工程师",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "台风窗口只剩 18 小时",
+                                   "设备坏一项就误差成倍放大",
+                                   "撤离名单装不下所有人"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：海平面警报码一夜跳过了两级"
+    },
+    {
+        "id":  43,
+        "title":  "雁门婚书",
+        "spacetime":  "架空古代边关城池",
+        "theme":  "婚约博弈与情感试探",
+        "protagonist_setup":  "被送来和亲却临时换名的庶女",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "婚书牵涉停战条件",
+                                   "任何私情都会被放大成叛意",
+                                   "城内城外都有人想借你表态"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "情感拉扯",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：入城第一夜，你发现婚书上的名字不是自己"
+    },
+    {
+        "id":  44,
+        "title":  "赤金工坊",
+        "spacetime":  "蒸汽风架空商港",
+        "theme":  "工坊经营与技术垄断",
+        "protagonist_setup":  "欠债的年轻机械匠",
+        "system_type":  "成就",
+        "custom_constraints":  [
+                                   "原材料一天一涨价",
+                                   "旧行会卡住入市资格",
+                                   "作品越出名越容易被人偷图纸"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "爽文推进",
+        "route":  "general_story",
+        "opening":  "开场：唯一能救工坊的订单，被行会会长当众改给别人"
+    },
+    {
+        "id":  45,
+        "title":  "断碑镇",
+        "spacetime":  "架空江湖边镇与荒祠",
+        "theme":  "旧案追查与武林禁忌",
+        "protagonist_setup":  "替亡师守碑的三流弟子",
+        "system_type":  "战斗升级",
+        "custom_constraints":  [
+                                   "实力不足不能硬闯禁地",
+                                   "江湖传言故意互相矛盾",
+                                   "每次动武都会暴露师门痕迹"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "写实压迫",
+        "route":  "suspense_investigation",
+        "opening":  "开场：你守了三年的无名碑，今夜突然裂出血字"
+    },
+    {
+        "id":  46,
+        "title":  "星砂旅社",
+        "spacetime":  "多元宇宙荒漠边站",
+        "theme":  "短暂停留中的关系升温与错位",
+        "protagonist_setup":  "负责登记来客的前线联络员",
+        "system_type":  "好感度攻略",
+        "custom_constraints":  [
+                                   "住客停留不过一夜",
+                                   "你的真实身份不能明说",
+                                   "越靠近谁就越容易被卷走"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "情感拉扯",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：一个你本不该再见的人，拿着失效房卡站在柜台前"
+    },
+    {
+        "id":  47,
+        "title":  "临界航线",
+        "spacetime":  "近未来跨洋客运飞行器",
+        "theme":  "空中故障与资源选择",
+        "protagonist_setup":  "刚转正的副驾驶",
+        "system_type":  "任务",
+        "custom_constraints":  [
+                                   "机上每一项操作都有黑匣子记录",
+                                   "乘客情绪一失控就会压垮秩序",
+                                   "返航与迫降都要付大代价"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：巡航刚开始，自动驾驶系统突然拒绝识别机长权限"
+    },
+    {
+        "id":  48,
+        "title":  "纸上王庭",
+        "spacetime":  "高魔王城与公文院",
+        "theme":  "文书权力与话语垄断",
+        "protagonist_setup":  "被冷藏的书记官学徒",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "一纸诏令能杀人也能救人",
+                                   "伪造笔迹要付巨大代价",
+                                   "你知道真相却没有发言资格"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "细腻沉浸",
+        "route":  "power_game",
+        "opening":  "开场：密封待发的诏书里，多出一行只你认得的旧暗号"
+    },
+    {
+        "id":  49,
+        "title":  "茶山回声",
+        "spacetime":  "当代西南山村与返乡茶园",
+        "theme":  "家庭修复与慢热成长",
+        "protagonist_setup":  "辞职返乡照看外婆的城市青年",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "茶季窗口只有一个月",
+                                   "村里旧事谁都记得",
+                                   "你越想避开家事越会撞上"
+                               ],
+        "meta_theme":  "治愈成长",
+        "story_class":  "治愈成长",
+        "style":  "细腻沉浸",
+        "route":  "healing_growth",
+        "opening":  "开场：多年没人住的老屋门口，被人放了一筐刚采下的新芽"
+    },
+    {
+        "id":  50,
+        "title":  "夜色合伙人",
+        "spacetime":  "当代金融街与地下会所",
+        "theme":  "资本局中局与伙伴切割",
+        "protagonist_setup":  "被迫接盘问题项目的投资经理",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "资金链断一天就会被清退",
+                                   "口头承诺没有任何保护",
+                                   "你信任的人可能早已另投他门"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "黑色幽默",
+        "route":  "power_game",
+        "opening":  "开场：签约前十分钟，合作方突然把原合同换成补充协议"
+    },
+    {
+        "id":  51,
+        "title":  "冻海补给线",
+        "spacetime":  "后末日极寒海岸聚落",
+        "theme":  "补给争夺与护送撤离",
+        "protagonist_setup":  "负责雪地车队的年轻队长",
+        "system_type":  "任务",
+        "custom_constraints":  [
+                                   "燃料只够一趟来回",
+                                   "冰层断裂会吞掉整车物资",
+                                   "队伍里有人宁愿你失败"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：补给船比预定晚了三天，而储粮只剩今晚"
+    },
+    {
+        "id":  52,
+        "title":  "云上法庭",
+        "spacetime":  "近未来云端司法网络",
+        "theme":  "证据博弈与程序试探",
+        "protagonist_setup":  "基层法务审核员",
+        "system_type":  "规则手册",
+        "custom_constraints":  [
+                                   "程序错误比真相更快致命",
+                                   "所有发言都自动留存",
+                                   "你不能直接接触当事人却得决定他们命运"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：系统把一桩普通申诉突然升级成红色复核案"
+    },
+    {
+        "id":  53,
+        "title":  "鹭岛夏令营",
+        "spacetime":  "当代海岛夏训营地",
+        "theme":  "关系修复与微妙暧昧",
+        "protagonist_setup":  "带队实习老师",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "营地事故谁都担不起",
+                                   "师生边界必须守住",
+                                   "旧相识的重逢会被所有人看见"
+                               ],
+        "meta_theme":  "治愈成长",
+        "story_class":  "情感拉扯",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：点名时，你发现名单里有那个三年没联系的人"
+    },
+    {
+        "id":  54,
+        "title":  "凤栖别院",
+        "spacetime":  "架空南朝王府别院",
+        "theme":  "婚局周旋与真心试探",
+        "protagonist_setup":  "被送去陪嫁却另有身份的女官",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "主家与外家都在盯你",
+                                   "任何偏袒都会被解读成站队",
+                                   "真正身份一旦露出就回不了头"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "情感拉扯",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：大婚前夜，新郎先递来的不是礼，是一张求你毁约的字条"
+    },
+    {
+        "id":  55,
+        "title":  "镜湖捞尸簿",
+        "spacetime":  "民国初年湖城与巡捕房",
+        "theme":  "旧案翻面与水路秘密",
+        "protagonist_setup":  "被贬做验尸助手的医学生",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "程序证据不全就不能定案",
+                                   "湖上势力互相包庇",
+                                   "每捞起一具尸体就离旧案更近一步"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "写实压迫",
+        "route":  "suspense_investigation",
+        "opening":  "开场：镜湖又捞起无名尸，衣袋里却有你老师的名片"
+    },
+    {
+        "id":  56,
+        "title":  "星门清算师",
+        "spacetime":  "远未来边境星门税关",
+        "theme":  "债务谈判与生死清算",
+        "protagonist_setup":  "刚失去执照的年轻清算师",
+        "system_type":  "荣辱与共",
+        "custom_constraints":  [
+                                   "一笔坏账可能拖垮整站",
+                                   "你无权动武却要面对武装商团",
+                                   "账算得越清越可能得罪所有人"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "爽文推进",
+        "route":  "power_game",
+        "opening":  "开场：停泊税刚要结算，一艘黑名单货船抢先进门"
+    },
+    {
+        "id":  57,
+        "title":  "金雀事务所",
+        "spacetime":  "现代娱乐经纪行业",
+        "theme":  "资源反抢与公开打脸",
+        "protagonist_setup":  "被雪藏的经纪人助理",
+        "system_type":  "好感度攻略",
+        "custom_constraints":  [
+                                   "流量窗口不等人",
+                                   "一条偷拍视频就能毁号",
+                                   "你拉回的每个艺人都带着旧恩怨"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "打脸逆袭",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：对家当众挖走你手上唯一能翻盘的新艺人"
+    },
+    {
+        "id":  58,
+        "title":  "漆黑病栋",
+        "spacetime":  "当代停运住院楼",
+        "theme":  "封闭怪谈与夜间逃生",
+        "protagonist_setup":  "新来的夜班护工",
+        "system_type":  "规则手册",
+        "custom_constraints":  [
+                                   "值班规则不能错一条",
+                                   "电梯和楼梯不是一直都安全",
+                                   "病历越完整越可能吓到你自己"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "黑色幽默",
+        "route":  "suspense_investigation",
+        "opening":  "开场：巡房表上多出一间不存在的 17 号病房"
+    },
+    {
+        "id":  59,
+        "title":  "荒原幼驯场",
+        "spacetime":  "奇幻边境牧场",
+        "theme":  "驯养经营与资源滚雪球",
+        "protagonist_setup":  "接手破败幼兽场的年轻驯养员",
+        "system_type":  "养成",
+        "custom_constraints":  [
+                                   "养错一只就可能全盘赔本",
+                                   "幼兽亲近不等于能上战场",
+                                   "附近大商会正等你低价卖场"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "爽文推进",
+        "route":  "general_story",
+        "opening":  "开场：拍卖场上没人肯要的病弱幼龙，突然盯上了你"
+    },
+    {
+        "id":  60,
+        "title":  "归航码表",
+        "spacetime":  "1997 年沿海修船厂与散货码头",
+        "theme":  "船务经营与关系修复",
+        "protagonist_setup":  "替父还债的修船工",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "船厂欠薪会先散人心",
+                                   "海运行情转得极快",
+                                   "你要的是现金流不是面子"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：第一艘愿意给你试修的旧船，在进坞前撞坏了螺旋桨"
+    },
+    {
+        "id":  61,
+        "title":  "薄雾新闻社",
+        "spacetime":  "1935 年租界报馆与电车街区",
+        "theme":  "新闻追查与政治遮掩",
+        "protagonist_setup":  "专跑社会版的小记者",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "报社不愿碰真正危险的题",
+                                   "线人会被买通",
+                                   "见报不等于真相被相信"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "写实压迫",
+        "route":  "suspense_investigation",
+        "opening":  "开场：一张翻拍底片里，站着昨天才被宣布死亡的人"
+    },
+    {
+        "id":  62,
+        "title":  "河湾钢厂春招",
+        "spacetime":  "1984 年国营钢厂家属区",
+        "theme":  "上位竞争与当众翻盘",
+        "protagonist_setup":  "临时工家庭出身的技校生",
+        "system_type":  "学霸学习",
+        "custom_constraints":  [
+                                   "考核名额只有一个",
+                                   "老师傅不一定肯真教",
+                                   "你一旦出头就会被说是抢饭碗"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "打脸逆袭",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：顶掉你名额的人，正把你的试卷当笑话念"
+    },
+    {
+        "id":  63,
+        "title":  "琥珀旅团",
+        "spacetime":  "奇幻边境战线与商道废墟",
+        "theme":  "佣兵求生与团队磨合",
+        "protagonist_setup":  "刚接手残编旅团的后勤官",
+        "system_type":  "荣辱与共",
+        "custom_constraints":  [
+                                   "旅团口粮撑不过五天",
+                                   "人心比怪物更先散",
+                                   "每次接单都要在钱与命之间取舍"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：雇主刚涨价，前队长留下的欠债单就被人拍在桌上"
+    },
+    {
+        "id":  64,
+        "title":  "静水录音带",
+        "spacetime":  "2008 年江南小城与旧出租屋",
+        "theme":  "回忆修复与自我和解",
+        "protagonist_setup":  "帮母亲整理遗物的配音演员",
+        "system_type":  "特殊物品",
+        "custom_constraints":  [
+                                   "录音带每听一次都更难分辨现实",
+                                   "家人对往事各执一词",
+                                   "你必须决定哪些真相该继续埋着"
+                               ],
+        "meta_theme":  "治愈成长",
+        "story_class":  "治愈成长",
+        "style":  "细腻沉浸",
+        "route":  "healing_growth",
+        "opening":  "开场：第一盘老录音带里，出现了你从未说过的一段童声"
+    },
+    {
+        "id":  65,
+        "title":  "皇城夜绣",
+        "spacetime":  "架空深宫绣院与王城内廷",
+        "theme":  "秘密差事与禁忌情感",
+        "protagonist_setup":  "被挑进夜绣局的民间绣娘",
+        "system_type":  "好感度攻略",
+        "custom_constraints":  [
+                                   "绣错一针就可能送命",
+                                   "你绣的图样可能是密令",
+                                   "靠近谁都像是在选边站"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "情感拉扯",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：第一夜接的差事，是为一个已经“死去”的人赶制朝服"
+    },
+    {
+        "id":  66,
+        "title":  "深蓝采珠队",
+        "spacetime":  "近未来海底采集城",
+        "theme":  "高压作业与收益分配",
+        "protagonist_setup":  "欠下潜水债的新人采珠员",
+        "system_type":  "成就",
+        "custom_constraints":  [
+                                   "一次深潜就决定本周生死",
+                                   "减压失误可能致残",
+                                   "团队分账不公会先炸锅"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "经营积累",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：你第一次下潜，就在海沟里发现一箱被刻意沉下去的货"
+    },
+    {
+        "id":  67,
+        "title":  "断层公路",
+        "spacetime":  "地震后的山地交通废墟",
+        "theme":  "车队护送与道路求生",
+        "protagonist_setup":  "临时被推上前车位的长途司机",
+        "system_type":  "任务",
+        "custom_constraints":  [
+                                   "山体滑坡随时改线",
+                                   "车上每个人都想先活",
+                                   "一次误判会断掉整个车队"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：第一段山路刚清出来，后车就传来失联呼叫"
+    },
+    {
+        "id":  68,
+        "title":  "桃花债局",
+        "spacetime":  "民国江南商镇与会馆",
+        "theme":  "旧婚约与商票博弈",
+        "protagonist_setup":  "被迫替兄长出面、暗中另掌一套私账的票号小姐",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "婚约背后绑着两家票号信用",
+                                   "你不能公开真实算盘",
+                                   "任意一方翻脸都会引发挤兑"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "权谋博弈",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：退婚书和催兑票在同一天送到了你案头"
+    },
+    {
+        "id":  69,
+        "title":  "蚀日钟楼",
+        "spacetime":  "高魔王城与旧时计塔",
+        "theme":  "仪式失控与时间线索追查",
+        "protagonist_setup":  "负责维护钟楼的低阶术师",
+        "system_type":  "特殊物品",
+        "custom_constraints":  [
+                                   "每次回拨都要丢掉一段记忆",
+                                   "城里没人相信时间错乱",
+                                   "真正的修复代价你还付不起"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "细腻沉浸",
+        "route":  "suspense_investigation",
+        "opening":  "开场：正午未到，整座城却同时响起十二声钟"
+    },
+    {
+        "id":  70,
+        "title":  "夜班调度台",
+        "spacetime":  "当代地铁控制中心",
+        "theme":  "事故压制与责任分配",
+        "protagonist_setup":  "刚转正的夜班行车调度",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "一分钟误判就是整线瘫痪",
+                                   "对外通报永远滞后于真相",
+                                   "你救得了列车未必保得住岗位"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：最后一班进站前，控制屏上多出一列不存在的车次"
+    },
+    {
+        "id":  71,
+        "title":  "听潮练习册",
+        "spacetime":  "当代海边普通高中",
+        "theme":  "同伴修复与慢热成长",
+        "protagonist_setup":  "总被误解为冷淡的转学生",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "月考排名会放大一切误会",
+                                   "班里流言比海风传得更快",
+                                   "你不擅长解释只会更糟"
+                               ],
+        "meta_theme":  "治愈成长",
+        "story_class":  "治愈成长",
+        "style":  "细腻沉浸",
+        "route":  "healing_growth",
+        "opening":  "开场：你的练习册被改了批注，字迹却像曾经最熟的人"
+    },
+    {
+        "id":  72,
+        "title":  "失物签收处",
+        "spacetime":  "多元中转站与跨界月台",
+        "theme":  "失物追索与身份疑云",
+        "protagonist_setup":  "负责登记遗失物的新人管理员",
+        "system_type":  "规则手册",
+        "custom_constraints":  [
+                                   "每件失物只能开封一次",
+                                   "归还错误会改写命运线",
+                                   "有些失主根本不该存在"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "细腻沉浸",
+        "route":  "immersive_novel",
+        "opening":  "开场：你今天第一件失物，是一把写着你名字的房门钥匙"
+    },
+    {
+        "id":  73,
+        "title":  "南港旧厂牌",
+        "spacetime":  "当代沿海老工业区",
+        "theme":  "旧厂改造与经营翻身",
+        "protagonist_setup":  "替家里守住小配件厂的二代",
+        "system_type":  "成就",
+        "custom_constraints":  [
+                                   "账上现金只够半个月",
+                                   "工人走掉就接不了单",
+                                   "转型失败会把老客户也一起丢光"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：谈了三周的大单，在签字前被对手截胡"
+    },
+    {
+        "id":  74,
+        "title":  "苍穹审判庭",
+        "spacetime":  "高魔帝国与空岛法庭",
+        "theme":  "法庭权斗与规则杀伐",
+        "protagonist_setup":  "刚获准入庭的低阶辩护师",
+        "system_type":  "规则手册",
+        "custom_constraints":  [
+                                   "法庭规则比魔法更致命",
+                                   "一次失言会毁掉委托人和你自己",
+                                   "你只能在对方设好的框架里出手"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：开庭前，书记官悄悄删掉了你最关键的一页证词"
+    },
+    {
+        "id":  75,
+        "title":  "荒墟便利店",
+        "spacetime":  "后末日避难聚居点边缘",
+        "theme":  "小据点经营与互助求生",
+        "protagonist_setup":  "守着最后一家便利店的年轻老板",
+        "system_type":  "签到",
+        "custom_constraints":  [
+                                   "库存每天都在缩水",
+                                   "好人情可能换来恶性依赖",
+                                   "你不能救所有人但也不能彻底冷血"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "经营积累",
+        "style":  "黑色幽默",
+        "route":  "general_story",
+        "opening":  "开场：避难站刚断配给，你仓库门口就排起了长队"
+    },
+    {
+        "id":  76,
+        "title":  "黑箱综艺局",
+        "spacetime":  "当代综艺制作与网暴生态",
+        "theme":  "节目翻盘与人设反杀",
+        "protagonist_setup":  "被当替罪羊的后期导演",
+        "system_type":  "幕后黑手",
+        "custom_constraints":  [
+                                   "剪辑台就是战场",
+                                   "每个热搜都有人在喂料",
+                                   "你揭穿别人也会把自己卷进去"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "打脸逆袭",
+        "style":  "黑色幽默",
+        "route":  "short_drama",
+        "opening":  "开场：首期播出后，全网都把最差口碑扣在你头上"
+    },
+    {
+        "id":  77,
+        "title":  "北庭译官",
+        "spacetime":  "古代边城使团驿馆",
+        "theme":  "密信辨伪与谈判周旋",
+        "protagonist_setup":  "表面是译官、实际背着旧师门密令的年轻人",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "一句错译就能挑起战火",
+                                   "两边都在试探你站哪边",
+                                   "真正的密令从不写在纸上"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "写实压迫",
+        "route":  "suspense_investigation",
+        "opening":  "开场：外使递来的贺词里，藏着只属于你旧师门的暗码"
+    },
+    {
+        "id":  78,
+        "title":  "寒星养殖场",
+        "spacetime":  "远未来殖民卫星农业舱",
+        "theme":  "资源经营与生存扩张",
+        "protagonist_setup":  "负责失败农业舱的年轻站长",
+        "system_type":  "成就",
+        "custom_constraints":  [
+                                   "氧水热量都按小时核算",
+                                   "作物实验失败就要断粮",
+                                   "大公司只想低价收购你的舱区"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "细腻沉浸",
+        "route":  "general_story",
+        "opening":  "开场：本周唯一一批可收成作物，刚刚被检测出异常"
+    },
+    {
+        "id":  79,
+        "title":  "影河诏狱",
+        "spacetime":  "架空古代暗河牢城",
+        "theme":  "讯问博弈与派系清算",
+        "protagonist_setup":  "被临时提拔的书记狱吏",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "你能记的比能说的多得多",
+                                   "每份口供都可能是别人递来的刀",
+                                   "怜悯和立场一样昂贵"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "黑色幽默",
+        "route":  "power_game",
+        "opening":  "开场：押进来的第一名犯人，竟认得你童年名字"
+    },
+    {
+        "id":  80,
+        "title":  "春雷诊所",
+        "spacetime":  "1999 年小城街边诊所",
+        "theme":  "家庭修补与成长承担",
+        "protagonist_setup":  "被迫接手诊所的医学院休学生",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "药款周转一断就关门",
+                                   "小地方人情比规章更难推开",
+                                   "你治得好病未必处理得了关系"
+                               ],
+        "meta_theme":  "治愈成长",
+        "story_class":  "治愈成长",
+        "style":  "细腻沉浸",
+        "route":  "healing_growth",
+        "opening":  "开场：开门第一位病人，是你已经断联系很久的父亲"
+    },
+    {
+        "id":  81,
+        "title":  "空塔清单",
+        "spacetime":  "高魔学院禁区高塔",
+        "theme":  "失物追查与禁术疑云",
+        "protagonist_setup":  "被派去清点遗物的低阶学徒",
+        "system_type":  "特殊物品",
+        "custom_constraints":  [
+                                   "每件遗物都可能带诅咒",
+                                   "塔内楼层规则会变化",
+                                   "丢失的不是物件而是人"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "细腻沉浸",
+        "route":  "suspense_investigation",
+        "opening":  "开场：清单最后一项写着“你自己”，入库时间是明天"
+    },
+    {
+        "id":  82,
+        "title":  "山城票号",
+        "spacetime":  "清末山地商路与票号分号",
+        "theme":  "票号经营与信用争夺",
+        "protagonist_setup":  "被迫顶父亲位置的少东家",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "票号一旦失信就雪崩",
+                                   "山路断一天现金就断流",
+                                   "你的人情账比银票更难还"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "经营积累",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：总号突然来信，要你三天内填平一笔说不清的亏空"
+    },
+    {
+        "id":  83,
+        "title":  "零号病原车",
+        "spacetime":  "近未来封锁列车与移动实验室",
+        "theme":  "病毒失控与车厢求生",
+        "protagonist_setup":  "生物样本押运员",
+        "system_type":  "任务",
+        "custom_constraints":  [
+                                   "样本不能丢也不能泄",
+                                   "车厢隔离一破全列变坟场",
+                                   "每节车厢的真相不一样"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：列车刚离站，零号冷柜的温度就开始异常上升"
+    },
+    {
+        "id":  84,
+        "title":  "曙光班列",
+        "spacetime":  "近未来西部铁路新区",
+        "theme":  "岗位争夺与工程翻盘",
+        "protagonist_setup":  "被边缘化的青年线路工程师",
+        "system_type":  "成就",
+        "custom_constraints":  [
+                                   "工期只会提前不会延后",
+                                   "一次小事故就会被拿来祭旗",
+                                   "你要争的不是苦劳是资格"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "打脸逆袭",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：竣工验收前夜，你负责的那一段轨道突然被人举报不合格"
+    },
+    {
+        "id":  85,
+        "title":  "缝月裁判所",
+        "spacetime":  "多元宇宙缝隙法庭",
+        "theme":  "规则审判与身份判定",
+        "protagonist_setup":  "专办跨界纠纷的实习书记官",
+        "system_type":  "规则手册",
+        "custom_constraints":  [
+                                   "判例能改写现实结果",
+                                   "你无权质疑上级却看见漏洞",
+                                   "每次翻案都要付出一个稳定世界的代价"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "权谋博弈",
+        "style":  "细腻沉浸",
+        "route":  "power_game",
+        "opening":  "开场：今日第一案的被告，持有和你一模一样的出生记录"
+    },
+    {
+        "id":  86,
+        "title":  "雨棚下的告白局",
+        "spacetime":  "当代都市共享办公楼",
+        "theme":  "暧昧试探与关系失衡",
+        "protagonist_setup":  "被迫与前任共事的品牌文案",
+        "system_type":  "好感度攻略",
+        "custom_constraints":  [
+                                   "办公室风声比真相快",
+                                   "合作失败会一起背锅",
+                                   "你越想公私分开就越被推到台前"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "情感拉扯",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：暴雨停电的晚上，只有你和他被锁在同一层"
+    },
+    {
+        "id":  87,
+        "title":  "冰湖潜标队",
+        "spacetime":  "近未来极地科研站",
+        "theme":  "冰裂危机与深潜抉择",
+        "protagonist_setup":  "刚加入潜标维护组的新队员",
+        "system_type":  "任务",
+        "custom_constraints":  [
+                                   "冰层窗口只给你几小时",
+                                   "上浮失误足以致命",
+                                   "站里有人想隐瞒真实观测值"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：第一根失联浮标回传的，不是数据，而是人声"
+    },
+    {
+        "id":  88,
+        "title":  "纸鸢邮局",
+        "spacetime":  "奇幻山海边城",
+        "theme":  "书信修复与人心回暖",
+        "protagonist_setup":  "给亡者与生者投递书信的见习邮差",
+        "system_type":  "特殊物品",
+        "custom_constraints":  [
+                                   "每封信只能拆读一次",
+                                   "送错信会改掉别人的念想",
+                                   "你不能长久停在任何一个故事里"
+                               ],
+        "meta_theme":  "治愈成长",
+        "story_class":  "治愈成长",
+        "style":  "细腻沉浸",
+        "route":  "healing_growth",
+        "opening":  "开场：第一封退回的信上，收件人写的是十年前的你"
+    },
+    {
+        "id":  89,
+        "title":  "镜面税局",
+        "spacetime":  "近未来透明治理城市",
+        "theme":  "财政权斗与数据操盘",
+        "protagonist_setup":  "被调进异常税单组的基层科员",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "所有数字都能杀人",
+                                   "你改不了规则只能找缝",
+                                   "部门里每个人都想让责任落到别人身上"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：系统自动追缴的第一笔税款，落在你失联多年的家人头上"
+    },
+    {
+        "id":  90,
+        "title":  "旧城追声人",
+        "spacetime":  "当代旧改城区与地下声学空间",
+        "theme":  "声音线索与失踪案追踪",
+        "protagonist_setup":  "给影视组收环境音的录音师",
+        "system_type":  "特殊物品",
+        "custom_constraints":  [
+                                   "录到的不一定都能公开",
+                                   "旧城拆迁让证据每天消失",
+                                   "你越靠近声源越像在被反监听"
+                               ],
+        "meta_theme":  "悬疑发现",
+        "story_class":  "悬疑烧脑",
+        "style":  "细腻沉浸",
+        "route":  "suspense_investigation",
+        "opening":  "开场：收音回放里，传出一个本该空置房间里的求救声"
+    },
+    {
+        "id":  91,
+        "title":  "星港代偿令",
+        "spacetime":  "远未来债务港与私掠航道",
+        "theme":  "破产翻身与债务连环反击",
+        "protagonist_setup":  "刚被追缴飞船执照的前船长",
+        "system_type":  "荣辱与共",
+        "custom_constraints":  [
+                                   "一笔代偿失败就会被永久除名",
+                                   "你要拉拢的人都在等你先输",
+                                   "合法手段太慢但越线就会彻底完蛋"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "打脸逆袭",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：债权人直播拆你旧船时，评论区忽然刷出一笔匿名赏金"
+    },
+    {
+        "id":  92,
+        "title":  "鹿鸣茶会",
+        "spacetime":  "1930 年代南方省城公馆社交圈",
+        "theme":  "婚配试探与立场摇摆",
+        "protagonist_setup":  "被家族推上相看桌的留洋归国小姐",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "一次失礼会毁掉整季名声",
+                                   "每场茶会都是隐形站队",
+                                   "你以为的心动对象未必真自由"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "情感拉扯",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：第一场茶会刚开始，长辈就当众宣布你的婚期“已定”"
+    },
+    {
+        "id":  93,
+        "title":  "深林驻塔员",
+        "spacetime":  "奇幻边境雾林与警戒高塔",
+        "theme":  "封林异变与孤站求生",
+        "protagonist_setup":  "新到任的驻塔员",
+        "system_type":  "规则手册",
+        "custom_constraints":  [
+                                   "夜间灯火不能乱灭",
+                                   "林中回声会模仿熟人",
+                                   "求援信号一旦发错就会引怪上门"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "细腻沉浸",
+        "route":  "general_story",
+        "opening":  "开场：交接日志最后一句写着“天黑后别回应楼下的我”"
+    },
+    {
+        "id":  94,
+        "title":  "晚潮歌剧社",
+        "spacetime":  "1937 年租界歌剧院与影戏公司",
+        "theme":  "机会争夺与公开翻身",
+        "protagonist_setup":  "唱不上主角的替补男高音",
+        "system_type":  "好感度攻略",
+        "custom_constraints":  [
+                                   "登台窗口只有一次",
+                                   "后台每个人都能递刀",
+                                   "你想赢角色也想保住真正想靠近的人"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "打脸逆袭",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：首演前两小时，主角突然失踪，所有人都看向了你"
+    },
+    {
+        "id":  95,
+        "title":  "窄门宿舍楼",
+        "spacetime":  "当代大学老宿舍与封楼整改期",
+        "theme":  "楼内规则与夜间生存",
+        "protagonist_setup":  "临时宿管助理",
+        "system_type":  "规则手册",
+        "custom_constraints":  [
+                                   "封楼期间不能擅自开门",
+                                   "每层少一个人都会出事",
+                                   "你不能确定广播里的规则是不是同一套"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "危机求生",
+        "style":  "黑色幽默",
+        "route":  "suspense_investigation",
+        "opening":  "开场：熄灯后，七楼的宿舍群开始点名一个不存在的床位"
+    },
+    {
+        "id":  96,
+        "title":  "远岸证券室",
+        "spacetime":  "当代投行与资本市场",
+        "theme":  "项目切割与席位争夺",
+        "protagonist_setup":  "刚转正的卖方分析师",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "报告一句话都能影响股价",
+                                   "站错团队季度就结束",
+                                   "真判断和能不能写出来是两回事"
+                               ],
+        "meta_theme":  "权力博弈",
+        "story_class":  "权谋博弈",
+        "style":  "写实压迫",
+        "route":  "power_game",
+        "opening":  "开场：晨会前，你的核心模型被人匿名发给了全组"
+    },
+    {
+        "id":  97,
+        "title":  "烬城拾荒队",
+        "spacetime":  "后末日废城与回收据点",
+        "theme":  "拾荒经营与队伍扩张",
+        "protagonist_setup":  "带着弟妹讨生活的回收队长",
+        "system_type":  "签到",
+        "custom_constraints":  [
+                                   "每次进城都是拿命换货",
+                                   "据点想收编你不是帮你",
+                                   "队伍越大越难分配公道"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "经营积累",
+        "style":  "爽文推进",
+        "route":  "general_story",
+        "opening":  "开场：你刚找到一台高价值能源箱，隔壁帮派就封死了退路"
+    },
+    {
+        "id":  98,
+        "title":  "银月婚审司",
+        "spacetime":  "高魔帝国婚契司",
+        "theme":  "婚契审查与真心博弈",
+        "protagonist_setup":  "能看见契约裂痕的年轻审契官",
+        "system_type":  "好感度攻略",
+        "custom_constraints":  [
+                                   "每份婚契都牵着利益链",
+                                   "你不能公开说谁不相配",
+                                   "看透别人的裂痕也会照见自己的"
+                               ],
+        "meta_theme":  "情感拉扯",
+        "story_class":  "情感拉扯",
+        "style":  "细腻沉浸",
+        "route":  "romance_tension",
+        "opening":  "开场：皇室指派的第一份婚契，正好是你前未婚对象的名字"
+    },
+    {
+        "id":  99,
+        "title":  "风暴写字楼",
+        "spacetime":  "当代互联网总部大楼",
+        "theme":  "舆情爆炸与楼内围困",
+        "protagonist_setup":  "负责应急预案的行政主管",
+        "system_type":  "无",
+        "custom_constraints":  [
+                                   "停电封楼先乱人心",
+                                   "每层都藏着不想曝光的事",
+                                   "你想保人就未必保得住公司"
+                               ],
+        "meta_theme":  "危机求生",
+        "story_class":  "权谋博弈",
+        "style":  "写实压迫",
+        "route":  "general_story",
+        "opening":  "开场：热搜刚爆，公司大楼门禁和消防系统同时失灵"
+    },
+    {
+        "id":  100,
+        "title":  "黎明试播间",
+        "spacetime":  "近未来互动媒体创业公司",
+        "theme":  "试播翻盘与资源抢夺",
+        "protagonist_setup":  "被降职到测试组的前节目统筹",
+        "system_type":  "幕后黑手",
+        "custom_constraints":  [
+                                   "试播数据今晚就定生死",
+                                   "团队里有人故意放水",
+                                   "你若反杀太狠就会提前暴露底牌"
+                               ],
+        "meta_theme":  "现实逆袭",
+        "story_class":  "打脸逆袭",
+        "style":  "爽文推进",
+        "route":  "short_drama",
+        "opening":  "开场：投资人临时改规则，要求你们一小时内拿出能爆的第一轮互动结果"
+    }
+]
