@@ -27,6 +27,7 @@ SillyTavern 原始页面和管理 API 不应该直接暴露给公网用户。
 ```text
 public/daydream.html
 public/scripts/daydream-public.js
+public/scripts/sse-core-stream.js
 public/scripts/daydream-public.css
 src/endpoints/daydream.js
 ```
@@ -149,6 +150,12 @@ server {
 
     location = /scripts/daydream-public.js {
         proxy_pass http://127.0.0.1:8000/scripts/daydream-public.js;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
+    location = /scripts/sse-core-stream.js {
+        proxy_pass http://127.0.0.1:8000/scripts/sse-core-stream.js;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
     }

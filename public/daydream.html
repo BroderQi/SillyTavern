@@ -32,6 +32,25 @@
         </div>
     </div>
 
+    <script>
+        window.addEventListener('error', function (event) {
+            const target = event.target;
+            if (target instanceof HTMLScriptElement && target.src.includes('/scripts/daydream-public.js')) {
+                const content = document.getElementById('dd_content');
+                if (content) {
+                    content.innerHTML = '<section class="dd-card"><div class="dd-error">DayDream 脚本加载失败，请检查 Nginx 静态资源白名单。</div></section>';
+                }
+            }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function (event) {
+            const content = document.getElementById('dd_content');
+            if (content && !content.textContent.trim()) {
+                const message = event.reason && event.reason.message ? event.reason.message : '未知错误';
+                content.innerHTML = '<section class="dd-card"><div class="dd-error">DayDream 启动失败：' + String(message).replace(/[<>&"]/g, '') + '</div></section>';
+            }
+        });
+    </script>
     <script type="module" src="/scripts/daydream-public.js"></script>
 </body>
 </html>

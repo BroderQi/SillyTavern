@@ -191,6 +191,7 @@ git pull
 npm install
 node --check src/endpoints/daydream.js
 node --check public/scripts/daydream-public.js
+node --check public/scripts/sse-core-stream.js
 node --check src/server-main.js
 systemctl restart daydream-sillytavern
 systemctl status daydream-sillytavern --no-pager
