@@ -1,5 +1,15 @@
 # DayDream Systemd 部署与二次更新手册
 
+
+cd /opt/SillyTavern
+git pull
+
+cp /opt/SillyTavern/deploy/nginx/bkgf-daydream.conf /etc/nginx/conf.d/bkgf-daydream.conf
+nginx -t
+systemctl reload nginx
+systemctl restart daydream-sillytavern
+
+
 这份文档用于服务器正式部署。目标是让 SillyTavern/DayDream 在后台常驻运行，并在服务器重启后自动恢复。
 
 公网入口仍然交给 Nginx，Node 服务只监听本机：
