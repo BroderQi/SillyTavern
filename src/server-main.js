@@ -62,6 +62,7 @@ import { UPLOADS_DIRECTORY } from './constants.js';
 
 // Routers
 import { router as usersPublicRouter } from './endpoints/users-public.js';
+import { router as daydreamRouter } from './endpoints/daydream.js';
 import { init as statsInit, onExit as statsOnExit } from './endpoints/stats.js';
 import { checkForNewContent } from './endpoints/content-manager.js';
 import { init as settingsInit } from './endpoints/settings.js';
@@ -212,6 +213,11 @@ app.get('/', cacheBuster.middleware, (request, response) => {
     return response.sendFile('index.html', { root: path.join(serverDirectory, 'public') });
 });
 
+// Public DayDream-only entry point. This intentionally avoids serving the full SillyTavern UI.
+app.get('/daydream', cacheBuster.middleware, (_request, response) => {
+    return response.sendFile('daydream.html', { root: path.join(serverDirectory, 'public') });
+});
+
 // Callback endpoint for OAuth PKCE flows (e.g. OpenRouter)
 app.get('/callback/:source?', (request, response) => {
     const source = request.params.source;
@@ -233,6 +239,7 @@ app.use(express.static(path.join(serverDirectory, 'public'), {}));
 
 // Public API
 app.use('/api/users', usersPublicRouter);
+app.use('/api/daydream', daydreamRouter);
 
 // Everything below this line requires authentication
 app.use(requireLoginMiddleware);

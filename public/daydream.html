@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DayDream 世界引擎</title>
+    <link rel="stylesheet" href="/scripts/daydream-public.css">
+</head>
+<body>
+    <div id="daydream_public_app" class="dd-app">
+        <div class="dd-shell">
+            <header class="dd-header">
+                <div>
+                    <h1 id="dd_story_title">DayDream</h1>
+                    <span id="dd_story_class">世界引擎</span>
+                </div>
+                <button id="dd_open_setup" class="dd-icon-btn" title="选择故事">设置</button>
+            </header>
+
+            <section id="dd_stats" class="dd-stats"></section>
+
+            <main id="dd_content" class="dd-content"></main>
+
+            <section class="dd-action-bar">
+                <input id="dd_custom_action" type="text" placeholder="输入自定义行动..." autocomplete="off">
+                <button id="dd_send_action" title="发送">发送</button>
+            </section>
+
+            <nav id="dd_tabs" class="dd-tabs"></nav>
+
+            <div id="dd_modal" class="dd-modal" hidden></div>
+        </div>
+    </div>
+
+    <script type="module" src="/scripts/daydream-public.js"></script>
+</body>
+</html>
