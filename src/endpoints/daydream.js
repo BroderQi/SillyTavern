@@ -20,6 +20,112 @@ const DEFAULT_MODEL = 'gpt-4o-mini';
 const MAX_HISTORY_ITEMS = 12;
 const MAX_MESSAGE_LENGTH = 4000;
 
+function mergeProfile(base, override) {
+    return {
+        ...base,
+        ...(override ?? {}),
+        top_stats: override?.top_stats ?? base.top_stats ?? [],
+        tabs: override?.tabs ?? base.tabs ?? [],
+    };
+}
+
+function getProfile(story, uiProfiles) {
+    let profile = structuredClone(uiProfiles['通用'] ?? { top_stats: [], tabs: [] });
+    if (story?.story_class && uiProfiles[story.story_class]) {
+        profile = mergeProfile(profile, structuredClone(uiProfiles[story.story_class]));
+    }
+    if (story?.ui_profile) {
+        profile = mergeProfile(profile, story.ui_profile);
+    }
+    return profile;
+}
+
+function writeSse(response, event, data) {
+    response.write(`event: ${event}\n`);
+    response.write(`data: ${JSON.stringify(data)}\n\n`);
+    response.flush?.();
+}
+
+function getDeltaFromCompletionChunk(chunk) {
+    const choice = chunk?.choices?.[0];
+    return choice?.delta?.content ?? choice?.message?.content ?? choice?.text ?? '';
+}
+
+async function pipeCompletionStream(upstream, response, provider) {
+    const contentType = upstream.headers.get('content-type') ?? '';
+
+    response.status(200);
+    response.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    response.setHeader('Cache-Control', 'no-cache, no-transform');
+    response.setHeader('Connection', 'keep-alive');
+    response.setHeader('X-Accel-Buffering', 'no');
+    response.flushHeaders?.();
+
+    if (!contentType.includes('text/event-stream')) {
+        const data = await upstream.json();
+        const text = data?.choices?.[0]?.message?.content ?? '';
+        if (text) {
+            writeSse(response, 'delta', { text });
+        }
+        writeSse(response, 'done', { text, model: provider.model });
+        response.end();
+        return;
+    }
+
+    const decoder = new TextDecoder('utf-8');
+    const reader = upstream.body?.getReader();
+    let pending = '';
+    let fullText = '';
+
+    if (!reader) {
+        writeSse(response, 'error', { error: 'DayDream provider did not return a readable stream.' });
+        response.end();
+        return;
+    }
+
+    const processLine = (line) => {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) {
+            return;
+        }
+
+        const payload = trimmed.slice(5).trim();
+        if (!payload || payload === '[DONE]') {
+            return;
+        }
+
+        try {
+            const delta = getDeltaFromCompletionChunk(JSON.parse(payload));
+            if (delta) {
+                fullText += delta;
+                writeSse(response, 'delta', { text: delta });
+            }
+        } catch {
+            // Ignore keepalive or provider-specific event frames that are not completion chunks.
+        }
+    };
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        pending += decoder.decode(value, { stream: true });
+        const lines = pending.split(/\r?\n/);
+        pending = lines.pop() ?? '';
+        for (const line of lines) {
+            processLine(line);
+        }
+    }
+
+    pending += decoder.decode();
+    for (const line of pending.split(/\r?\n/)) {
+        processLine(line);
+    }
+
+    writeSse(response, 'done', { text: fullText, model: provider.model });
+    response.end();
+}
+
 function readJson(filePath, fallback) {
     try {
         return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -81,11 +187,17 @@ function getStoryFromRequest(stories, body) {
     return body.story ?? null;
 }
 
-function buildMessages({ body, story, corePrompt, turnPrompt, endingPrompt }) {
+function buildMessages({ body, story, uiProfiles, corePrompt, turnPrompt, endingPrompt }) {
     const state = body.state ?? {};
     const history = Array.isArray(body.history) ? body.history.slice(-MAX_HISTORY_ITEMS) : [];
     const message = compact(body.message, '');
     const isEnding = /^\s*结束\s*$/.test(message);
+    const profile = getProfile(story, uiProfiles ?? {});
+    const visibleStats = (profile.top_stats ?? []).map(stat => ({
+        key: stat.key,
+        label: stat.label,
+        value: state.stats?.[stat.key],
+    }));
 
     const stateBlock = {
         story_title: story?.title ?? state.story_title ?? '',
@@ -105,6 +217,7 @@ function buildMessages({ body, story, corePrompt, turnPrompt, endingPrompt }) {
         active_hooks: state.active_hooks ?? [],
         important_branches: state.important_branches ?? [],
         near_ending: state.near_ending ?? false,
+        visible_stats: visibleStats,
     };
 
     const systemPrompt = [
@@ -115,6 +228,14 @@ function buildMessages({ body, story, corePrompt, turnPrompt, endingPrompt }) {
         '',
         '【DayDream 当前状态】',
         JSON.stringify(stateBlock, null, 2),
+        '',
+        '【DayDream 当前可见 UI】',
+        JSON.stringify({
+            top_stats: visibleStats,
+            tabs: (profile.tabs ?? []).map(tab => ({ key: tab.key, label: tab.label })),
+        }, null, 2),
+        '',
+        '【状态变化】优先更新当前可见 UI 中存在的状态项；不要发明与当前剧本无关的属性名。',
         '',
         turnPrompt,
         isEnding ? `\n${endingPrompt}` : '',
@@ -151,6 +272,7 @@ router.post('/generate', async (request, response) => {
 
     const body = request.body ?? {};
     const stories = readJson(STORIES_PATH, []);
+    const uiProfiles = readJson(UI_PROFILES_PATH, {});
     const story = getStoryFromRequest(stories, body);
 
     if (!story && !body.state?.custom_story) {
@@ -166,13 +288,15 @@ router.post('/generate', async (request, response) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'text/event-stream',
                 'Authorization': `Bearer ${provider.apiKey}`,
             },
             body: JSON.stringify({
                 model: provider.model,
-                messages: buildMessages({ body, story, corePrompt, turnPrompt, endingPrompt }),
+                messages: buildMessages({ body, story, uiProfiles, corePrompt, turnPrompt, endingPrompt }),
                 temperature: 0.85,
                 max_tokens: provider.responseTokens,
+                stream: true,
             }),
         });
 
@@ -182,15 +306,13 @@ router.post('/generate', async (request, response) => {
             return response.status(502).json({ error: 'DayDream provider request failed.' });
         }
 
-        const data = await upstream.json();
-        const text = data?.choices?.[0]?.message?.content ?? '';
-
-        return response.json({
-            text,
-            model: provider.model,
-        });
+        return pipeCompletionStream(upstream, response, provider);
     } catch (error) {
         console.error('DayDream generation failed:', error);
+        if (response.headersSent) {
+            writeSse(response, 'error', { error: 'DayDream generation failed.' });
+            return response.end();
+        }
         return response.status(500).json({ error: 'DayDream generation failed.' });
     }
 });

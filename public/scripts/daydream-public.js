@@ -206,7 +206,7 @@ function render() {
 
     renderStats(profile, state);
     renderTabs(profile);
-    renderContent(activeTab, state, story);
+    renderContent(activeTab, state, story, profile);
 
     if (!story) {
         showSetup();
@@ -243,13 +243,17 @@ function renderTabs(profile) {
     });
 }
 
-function renderContent(tab, state, story) {
+function getTabLabel(profile, key, fallback) {
+    return profile.tabs?.find(tab => tab.key === key)?.label ?? fallback;
+}
+
+function renderContent(tab, state, story, profile) {
     if (tab === 'story') return renderStory(state, story);
-    if (tab === 'stats') return renderStatsPanel(state);
-    if (tab === 'relations') return renderList('人脉', state.relationships, '暂无明确关系变化。');
-    if (tab === 'messages') return renderList('线索 / 通讯', [...state.active_hooks, ...state.pending_foreshadows], '暂无可查看的信息。');
-    if (tab === 'events') return renderList('事件', [...state.triggered_events, ...state.important_branches], '暂无已触发事件。');
-    if (tab === 'inventory') return renderList('资产 / 资源', state.resources, '暂无记录资源。');
+    if (tab === 'stats') return renderStatsPanel(state, profile, getTabLabel(profile, 'stats', '属性'));
+    if (tab === 'relations') return renderList(getTabLabel(profile, 'relations', '人脉'), state.relationships, '暂无明确关系变化。');
+    if (tab === 'messages') return renderList(getTabLabel(profile, 'messages', '线索 / 通讯'), [...state.active_hooks, ...state.pending_foreshadows], '暂无可查看的信息。');
+    if (tab === 'events') return renderList(getTabLabel(profile, 'events', '事件'), [...state.triggered_events, ...state.important_branches], '暂无已触发事件。');
+    if (tab === 'inventory') return renderList(getTabLabel(profile, 'inventory', '资产 / 资源'), state.resources, '暂无记录资源。');
     return renderSettings(story);
 }
 
@@ -286,15 +290,20 @@ function renderStory(state, story) {
     });
 }
 
-function renderStatsPanel(state) {
+function renderStatsPanel(state, profile, title) {
+    const visibleStats = (profile.top_stats ?? []).map(stat => ({
+        ...stat,
+        value: state.stats?.[stat.key] ?? '-',
+    }));
+
     qs('#dd_content').innerHTML = `
         <section class="dd-card">
-            <h2>属性</h2>
-            <div class="dd-list">
-                ${Object.entries(state.stats).map(([key, value]) => `
-                    <div class="dd-story-choice"><b>${escapeHtml(statLabels[key] || key)}</b><span>${escapeHtml(value)}</span></div>
+            <h2>${escapeHtml(title)}</h2>
+            ${visibleStats.length ? `<div class="dd-list">
+                ${visibleStats.map(stat => `
+                    <div class="dd-story-choice"><b>${escapeHtml(stat.label || statLabels[stat.key] || stat.key)}</b><span>${escapeHtml(stat.value)}</span></div>
                 `).join('')}
-            </div>
+            </div>` : '<div class="dd-empty">暂无状态记录。</div>'}
         </section>
     `;
 }
@@ -482,7 +491,7 @@ function getSection(text, label) {
 function parseOptions(text) {
     return getSection(text, '行动选项')
         .split('\n')
-        .map(line => line.match(/^\s*([1-4])[\.\、\:：]\s*(.+?)\s*$/))
+        .map(line => line.match(/^\s*([1-4])[.、:：]\s*(.+?)\s*$/))
         .filter(Boolean)
         .map(match => ({ index: Number(match[1]), text: match[2].trim() }))
         .filter(option => !/自定义输入/.test(option.text))
@@ -516,6 +525,79 @@ function applyStatusText(state, status) {
     }
 }
 
+function renderStreamingReply(story, text) {
+    const scene = parseReply(text);
+    qs('#dd_content').innerHTML = `
+        <section class="dd-card">
+            <div class="dd-kicker">${escapeHtml(story?.story_class || '生成中')}</div>
+            <h2>${escapeHtml(scene.title || '正在推进剧情')}</h2>
+            ${scene.screen ? `<div class="dd-screen">${formatText(scene.screen)}</div>` : ''}
+            <div class="dd-plot">${formatText(scene.plot || text || 'DayDream 正在生成下一幕...')}</div>
+            ${scene.status ? `<div class="dd-status">${formatText(scene.status)}</div>` : ''}
+        </section>
+    `;
+}
+
+function parseSseEvent(rawEvent) {
+    const lines = rawEvent.split(/\r?\n/);
+    const event = lines.find(line => line.startsWith('event:'))?.slice(6).trim() || 'message';
+    const data = lines
+        .filter(line => line.startsWith('data:'))
+        .map(line => line.slice(5).trimStart())
+        .join('\n');
+
+    return { event, data };
+}
+
+async function readDayDreamStream(response, onDelta) {
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!response.body || !contentType.includes('text/event-stream')) {
+        return response.json();
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let pending = '';
+    let fullText = '';
+    let model = '';
+
+    const dispatch = (rawEvent) => {
+        if (!rawEvent.trim()) return;
+        const { event, data } = parseSseEvent(rawEvent);
+        if (!data) return;
+
+        const payload = JSON.parse(data);
+        if (event === 'error') {
+            throw new Error(payload.error || '生成失败');
+        }
+        if (event === 'delta') {
+            fullText += payload.text || '';
+            onDelta(fullText);
+        }
+        if (event === 'done') {
+            fullText = payload.text ?? fullText;
+            model = payload.model ?? model;
+            onDelta(fullText);
+        }
+    };
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        pending += decoder.decode(value, { stream: true });
+        const events = pending.split(/\r?\n\r?\n/);
+        pending = events.pop() ?? '';
+        for (const event of events) {
+            dispatch(event);
+        }
+    }
+
+    pending += decoder.decode();
+    dispatch(pending);
+    return { text: fullText, model };
+}
+
 async function sendAction(text) {
     const message = String(text ?? '').trim();
     if (!message) return;
@@ -534,6 +616,7 @@ async function sendAction(text) {
 
     qs('#dd_custom_action').value = '';
     qs('#daydream_public_app').classList.add('dd-loading');
+    renderStreamingReply(story, '');
 
     try {
         const history = loadHistory();
@@ -541,12 +624,23 @@ async function sendAction(text) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'text/event-stream',
                 'X-CSRF-Token': csrfToken,
             },
             body: JSON.stringify({ story, state, message, history }),
         });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || '生成失败');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || '生成失败');
+        }
+
+        let lastPaint = 0;
+        const data = await readDayDreamStream(response, (streamText) => {
+            const now = Date.now();
+            if (now - lastPaint < 80) return;
+            lastPaint = now;
+            renderStreamingReply(story, streamText);
+        });
 
         const scene = parseReply(data.text);
         state.last_scene = {

@@ -398,7 +398,9 @@ button {
     border-color: rgba(140, 47, 40, 0.3);
 }
 
-.dd-loading {
+.dd-loading #dd_custom_action,
+.dd-loading #dd_send_action,
+.dd-loading .dd-option {
     opacity: 0.65;
     pointer-events: none;
 }
