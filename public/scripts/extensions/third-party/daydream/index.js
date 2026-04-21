@@ -452,7 +452,7 @@ function renderAll() {
     $('.daydream-story-title').text(story?.title || 'DayDream 世界引擎');
     renderStats(profile, state);
     renderTabs(profile);
-    renderContent(activeTab);
+    renderContent(activeTab, state, story, profile);
 
     if (!story) {
         showSetupModal();
@@ -491,22 +491,26 @@ function renderTabs(profile) {
     });
 }
 
-function renderContent(tab) {
+function getTabLabel(profile, key, fallback) {
+    return profile.tabs?.find(tab => tab.key === key)?.label ?? fallback;
+}
+
+function renderContent(tab, state, story, profile) {
     switch (tab) {
         case 'relations':
-            renderListPanel('人脉', getState().relationships, '暂无明确关系变化。');
+            renderListPanel(getTabLabel(profile, 'relations', '人脉'), getTabListItems('relations', state, profile), '暂无明确关系变化。');
             break;
         case 'messages':
-            renderListPanel('线索 / 通讯', [...getState().active_hooks, ...getState().pending_foreshadows], '暂无可查看的信息。');
+            renderListPanel(getTabLabel(profile, 'messages', '线索 / 通讯'), getTabListItems('messages', state, profile), '暂无可查看的信息。');
             break;
         case 'stats':
-            renderStatsPanel();
+            renderStatsPanel(profile, getTabLabel(profile, 'stats', '属性'));
             break;
         case 'events':
-            renderListPanel('事件', [...getState().triggered_events, ...getState().important_branches], '暂无已触发事件。');
+            renderListPanel(getTabLabel(profile, 'events', '事件'), getTabListItems('events', state, profile), '暂无已触发事件。');
             break;
         case 'inventory':
-            renderListPanel('资产 / 资源', getState().resources, '暂无记录资源。');
+            renderListPanel(getTabLabel(profile, 'inventory', '资产 / 资源'), getTabListItems('inventory', state, profile), '暂无记录资源。');
             break;
         case 'settings':
             renderGameSettingsPanel();
@@ -516,6 +520,33 @@ function renderContent(tab) {
             renderStoryPanel();
             break;
     }
+}
+
+function getTabListItems(tab, state, profile) {
+    const lists = {
+        relations: state.relationships ?? [],
+        messages: [...(state.active_hooks ?? []), ...(state.pending_foreshadows ?? [])],
+        events: [...(state.triggered_events ?? []), ...(state.important_branches ?? [])],
+        inventory: state.resources ?? [],
+    };
+    const list = lists[tab] ?? [];
+    return list.length ? list : getSnapshotItemsForTab(tab, state, profile);
+}
+
+function getSnapshotItemsForTab(tab, state, profile) {
+    const tabLabel = getTabLabel(profile, tab, '');
+    const snapshotKeys = {
+        messages: ['clues'],
+        inventory: ['supplies', 'cashflow'],
+    };
+    const keys = new Set(snapshotKeys[tab] ?? []);
+    return (profile.top_stats ?? [])
+        .filter(stat => (keys.has(stat.key) || stat.label === tabLabel) && state.stats?.[stat.key] !== undefined)
+        .map(stat => ({
+            name: stat.label || statLabels[stat.key] || stat.key,
+            value: state.stats[stat.key],
+            status: '当前快照，明细尚未生成',
+        }));
 }
 
 function renderStoryPanel() {
@@ -557,16 +588,19 @@ function renderListPanel(title, items, emptyText) {
     $('#daydream_content').html(`<section class="daydream-card"><h2>${escapeHtml(title)}</h2>${body}</section>`);
 }
 
-function renderStatsPanel() {
+function renderStatsPanel(profile, title) {
     const state = getState();
-    const entries = Object.entries(state.stats ?? {});
+    const entries = (profile.top_stats ?? []).map(stat => [
+        stat.label || statLabels[stat.key] || stat.key,
+        state.stats?.[stat.key] ?? '-',
+    ]);
     $('#daydream_content').html(`
         <section class="daydream-card">
-            <h2>属性</h2>
+            <h2>${escapeHtml(title)}</h2>
             <div class="daydream-stat-grid">
-                ${entries.map(([key, value]) => `
+                ${entries.map(([label, value]) => `
                     <div>
-                        <span>${escapeHtml(statLabels[key] || key)}</span>
+                        <span>${escapeHtml(label)}</span>
                         <b>${escapeHtml(value)}</b>
                     </div>
                 `).join('')}
@@ -608,10 +642,46 @@ function formatListItem(item) {
     }
     if (item && typeof item === 'object') {
         const title = item.name || item.title || item.label || item.key || '记录';
-        const detail = item.description || item.value || item.status || JSON.stringify(item);
-        return `<b>${escapeHtml(title)}</b><span>${escapeHtml(detail)}</span>`;
+        const detail = formatItemDetail(item);
+        return `<b>${escapeHtml(title)}</b><span>${escapeHtml(detail || '已记录')}</span>`;
     }
     return escapeHtml(String(item ?? ''));
+}
+
+function formatItemDetail(item) {
+    const labels = {
+        detail: '',
+        description: '',
+        summary: '',
+        relation: '关系',
+        type: '类型',
+        status: '状态',
+        affinity: '好感',
+        value: '数值',
+        quantity: '数量',
+        amount: '数量',
+        count: '数量',
+        owner: '归属',
+        source: '来源',
+        location: '位置',
+        time: '时间',
+        content: '内容',
+        evidence: '证据',
+        effect: '效果',
+        risk: '风险',
+        progress: '进展',
+        note: '备注',
+        reason: '原因',
+    };
+    const titleKeys = new Set(['name', 'title', 'label', 'key']);
+    return Object.entries(item)
+        .filter(([key, value]) => !titleKeys.has(key) && value !== undefined && value !== null && value !== '')
+        .map(([key, value]) => {
+            const text = Array.isArray(value) ? value.join('、') : String(value);
+            const label = labels[key] ?? key;
+            return label ? `${label}：${text}` : text;
+        })
+        .join('；');
 }
 
 function showSetupModal() {
