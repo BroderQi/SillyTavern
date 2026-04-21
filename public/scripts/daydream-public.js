@@ -208,6 +208,11 @@ function render() {
     }
 }
 
+function renderShell(profile, state) {
+    renderStats(profile, state);
+    renderTabs(profile);
+}
+
 function renderStats(profile, state) {
     qs('#dd_stats').innerHTML = (profile.top_stats ?? []).map(stat => `
         <div class="dd-stat">
@@ -247,8 +252,22 @@ function renderContent(tab, state, story, profile) {
     if (tab === 'relations') return renderList(getTabLabel(profile, 'relations', '人脉'), state.relationships, '暂无明确关系变化。');
     if (tab === 'messages') return renderList(getTabLabel(profile, 'messages', '线索 / 通讯'), [...state.active_hooks, ...state.pending_foreshadows], '暂无可查看的信息。');
     if (tab === 'events') return renderList(getTabLabel(profile, 'events', '事件'), [...state.triggered_events, ...state.important_branches], '暂无已触发事件。');
-    if (tab === 'inventory') return renderList(getTabLabel(profile, 'inventory', '资产 / 资源'), state.resources, '暂无记录资源。');
+    if (tab === 'inventory') return renderList(getTabLabel(profile, 'inventory', '资产 / 资源'), getInventoryList(state, profile), '暂无记录资源。');
     return renderSettings(story);
+}
+
+function getInventoryList(state, profile) {
+    const resources = state.resources ?? [];
+    if (resources.length) return resources;
+
+    const inventoryStats = new Set(['supplies', 'cashflow']);
+    return (profile.top_stats ?? [])
+        .filter(stat => inventoryStats.has(stat.key) && state.stats?.[stat.key] !== undefined)
+        .map(stat => ({
+            name: stat.label || statLabels[stat.key] || stat.key,
+            value: state.stats[stat.key],
+            status: '当前快照',
+        }));
 }
 
 function formatText(text) {
@@ -288,6 +307,8 @@ function selectAction(text) {
     if (!action) return;
     if (isGenerating) {
         pendingAction = action;
+        const input = qs('#dd_custom_action');
+        if (input?.value?.trim() === action) input.value = '';
         renderPendingOption();
         return;
     }
@@ -714,6 +735,8 @@ function applyMetaUpdates(state, meta, profile) {
 }
 
 function renderStreamingReply(story, text) {
+    if (activeTab !== 'story') return;
+
     const scene = parseVisibleScene(text);
     const optionsReady = scene.options.length >= 4;
     const optionHtml = scene.options.length
@@ -806,7 +829,7 @@ async function sendAction(text) {
     qs('#dd_custom_action').value = '';
     isGenerating = true;
     qs('#daydream_public_app').classList.add('dd-loading');
-    renderStreamingReply(story, '');
+    if (activeTab === 'story') renderStreamingReply(story, '');
 
     let completed = false;
     try {
@@ -830,7 +853,7 @@ async function sendAction(text) {
             const now = Date.now();
             if (now - lastPaint < 50) return;
             lastPaint = now;
-            renderStreamingReply(story, streamText);
+            if (activeTab === 'story') renderStreamingReply(story, streamText);
         });
 
         const scene = parseReply(data.text);
@@ -853,7 +876,8 @@ async function sendAction(text) {
 
         saveHistory([...history, { role: 'user', content: message }, { role: 'assistant', content: stripDayDreamMeta(data.text) || scene.plot }]);
         saveState(state);
-        render();
+        if (activeTab === 'story') render();
+        else renderShell(profile, state);
         completed = true;
     } catch (error) {
         pendingAction = '';

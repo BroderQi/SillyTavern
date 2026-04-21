@@ -481,12 +481,6 @@ button {
     border-color: rgba(140, 47, 40, 0.3);
 }
 
-.dd-loading #dd_custom_action,
-.dd-loading #dd_send_action {
-    opacity: 0.65;
-    pointer-events: none;
-}
-
 @media (max-width: 430px) {
     .dd-shell {
         width: 100vw;
