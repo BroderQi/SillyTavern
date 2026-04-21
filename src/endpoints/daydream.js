@@ -558,9 +558,20 @@ router.post('/custom-story', async (request, response) => {
     ];
 
     try {
-        const text = request.user?.directories
-            ? await generateCustomStoryViaSillyTavern(request, messages, readUserSettings(request), fallbackProvider)
-            : await generateCustomStoryViaFallback(fallbackProvider, messages);
+        let text;
+        if (request.user?.directories) {
+            try {
+                text = await generateCustomStoryViaSillyTavern(request, messages, readUserSettings(request), fallbackProvider);
+            } catch (error) {
+                if (!fallbackProvider.enabled) {
+                    throw error;
+                }
+                console.warn('DayDreamer custom story ST dispatch failed; falling back to the configured DayDreamer provider.', error);
+                text = await generateCustomStoryViaFallback(fallbackProvider, messages);
+            }
+        } else {
+            text = await generateCustomStoryViaFallback(fallbackProvider, messages);
+        }
         const rawStory = extractJsonObject(text);
         const story = normalizeGeneratedStory(rawStory, seedText, uiProfiles);
 
@@ -628,7 +639,22 @@ router.post('/generate', async (request, response) => {
             if (!upstream.ok) {
                 const errorText = await upstream.text().catch(() => '');
                 console.error('DayDreamer ST dispatch failed:', upstream.status, errorText);
-                return response.status(502).json({ error: 'DayDreamer SillyTavern dispatch failed.' });
+                if (fallbackProvider.enabled) {
+                    console.warn('DayDreamer is falling back to the configured DayDreamer provider.');
+                    const fallbackUpstream = await dispatchFallbackProvider(fallbackProvider, generation.messages, response);
+                    if (!fallbackUpstream) {
+                        return;
+                    }
+
+                    if (session?.session_id) {
+                        response.setHeader('X-DayDreamer-Session-Id', session.session_id);
+                    }
+                    return forwardFetchResponse(fallbackUpstream, response);
+                }
+
+                return response.status(502).json({
+                    error: 'SillyTavern 模型请求失败。请检查 SillyTavern 原生模型配置，或配置 DayDreamer_API_KEY 作为 fallback。',
+                });
             }
 
             response.setHeader('X-DayDreamer-Model', generation.resolvedProvider.model || fallbackProvider.model);
