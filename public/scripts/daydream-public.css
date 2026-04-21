@@ -192,6 +192,26 @@ button {
     border-color: rgba(47, 111, 100, 0.55);
 }
 
+.dd-option:disabled {
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+.dd-option.pending {
+    border-color: rgba(47, 111, 100, 0.7);
+    box-shadow: 0 0 0 2px rgba(47, 111, 100, 0.12);
+}
+
+.dd-pending-action {
+    margin-top: 10px;
+    padding: 10px 12px;
+    color: var(--primary-strong);
+    background: rgba(47, 111, 100, 0.10);
+    border: 1px solid rgba(47, 111, 100, 0.18);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
 .dd-option b {
     display: grid;
     width: 25px;
@@ -399,8 +419,7 @@ button {
 }
 
 .dd-loading #dd_custom_action,
-.dd-loading #dd_send_action,
-.dd-loading .dd-option {
+.dd-loading #dd_send_action {
     opacity: 0.65;
     pointer-events: none;
 }

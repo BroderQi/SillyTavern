@@ -72,6 +72,8 @@ let uiProfiles = {};
 let provider = {};
 let csrfToken = '';
 let activeTab = 'story';
+let isGenerating = false;
+let pendingAction = '';
 
 function qs(selector) {
     return document.querySelector(selector);
@@ -286,9 +288,40 @@ function renderStory(state, story) {
     document.querySelectorAll('.dd-option').forEach(button => {
         button.addEventListener('click', () => {
             const option = options.find(item => Number(item.index) === Number(button.dataset.option));
-            if (option) sendAction(option.text);
+            if (option) selectAction(option.text);
         });
     });
+}
+
+function selectAction(text) {
+    const action = String(text ?? '').trim();
+    if (!action) return;
+    if (isGenerating) {
+        pendingAction = action;
+        renderPendingOption();
+        return;
+    }
+    sendAction(action);
+}
+
+function renderPendingOption() {
+    document.querySelectorAll('.dd-option').forEach(button => {
+        const isPending = button.dataset.action === pendingAction;
+        button.classList.toggle('pending', isPending);
+        if (isPending) button.setAttribute('aria-busy', 'true');
+        else button.removeAttribute('aria-busy');
+    });
+
+    qs('#dd_queued_action')?.remove();
+    if (pendingAction) {
+        const options = qs('.dd-options');
+        options?.insertAdjacentHTML('afterend', renderPendingAction());
+    }
+}
+
+function renderPendingAction() {
+    if (!pendingAction) return '';
+    return '<div id="dd_queued_action" class="dd-pending-action" role="status">已选择，正在加载新场景中...</div>';
 }
 
 function renderStatsPanel(state, profile, title) {
@@ -675,9 +708,10 @@ function applyMetaUpdates(state, meta) {
 
 function renderStreamingReply(story, text) {
     const scene = parseVisibleScene(text);
+    const optionsReady = scene.options.length >= 4;
     const optionHtml = scene.options.length
         ? `<section class="dd-options">${scene.options.map(option => `
-            <button class="dd-option" disabled>
+            <button class="dd-option ${option.text === pendingAction ? 'pending' : ''}" data-action="${escapeHtml(option.text)}" ${optionsReady ? '' : 'disabled'}>
                 <b>${option.index}</b>
                 <span>${escapeHtml(option.text)}</span>
             </button>
@@ -692,7 +726,12 @@ function renderStreamingReply(story, text) {
             ${scene.plot ? `<div class="dd-plot">${formatText(scene.plot)}</div>` : '<div class="dd-empty">DayDream 正在生成下一幕...</div>'}
         </section>
         ${optionHtml}
+        ${renderPendingAction()}
     `;
+
+    document.querySelectorAll('.dd-option[data-action]').forEach(button => {
+        button.addEventListener('click', () => selectAction(button.dataset.action));
+    });
 }
 
 async function readDayDreamStream(response, onDelta) {
@@ -741,6 +780,11 @@ async function sendAction(text) {
 
     const state = loadState();
     const story = getStory(state);
+    if (isGenerating) {
+        pendingAction = message;
+        renderPendingOption();
+        return;
+    }
     if (!story) {
         showSetup();
         return;
@@ -752,9 +796,11 @@ async function sendAction(text) {
     }
 
     qs('#dd_custom_action').value = '';
+    isGenerating = true;
     qs('#daydream_public_app').classList.add('dd-loading');
     renderStreamingReply(story, '');
 
+    let completed = false;
     try {
         const history = loadHistory();
         const response = await fetch('/api/daydream/generate', {
@@ -799,10 +845,18 @@ async function sendAction(text) {
         saveHistory([...history, { role: 'user', content: message }, { role: 'assistant', content: stripDayDreamMeta(data.text) || scene.plot }]);
         saveState(state);
         render();
+        completed = true;
     } catch (error) {
+        pendingAction = '';
         renderError(error.message || '生成失败');
     } finally {
+        isGenerating = false;
         qs('#daydream_public_app').classList.remove('dd-loading');
+        if (completed && pendingAction) {
+            const action = pendingAction;
+            pendingAction = '';
+            sendAction(action);
+        }
     }
 }
 
@@ -811,11 +865,11 @@ function renderError(message) {
 }
 
 qs('#dd_open_setup').addEventListener('click', showSetup);
-qs('#dd_send_action').addEventListener('click', () => sendAction(qs('#dd_custom_action').value));
+qs('#dd_send_action').addEventListener('click', () => selectAction(qs('#dd_custom_action').value));
 qs('#dd_custom_action').addEventListener('keydown', event => {
     if (event.key === 'Enter') {
         event.preventDefault();
-        sendAction(qs('#dd_custom_action').value);
+        selectAction(qs('#dd_custom_action').value);
     }
 });
 
