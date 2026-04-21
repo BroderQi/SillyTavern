@@ -155,11 +155,49 @@ function getAllowedStoryClasses(uiProfiles = {}) {
     return keys.length ? keys : ['通用'];
 }
 
+function getCustomStoryIntent(seedText) {
+    const text = String(seedText ?? '');
+    const hasSuspenseIntent = /悬疑|烧脑|破案|侦探|调查|查案|案件|旧案|真相|线索|谜团|怪谈|失踪|尸|诡|异常|规则/.test(text);
+    const hasWealthIntent = /一千万|千万|百万|一个亿|亿|暴富|有钱|神豪|消费|花钱|到账|现金|彩票|中奖|财富|资产|存款|投资/.test(text);
+    const hasBusinessIntent = /创业|经营|开店|公司|生意|项目|品牌|电商|直播带货|商战|现金流|融资|市场/.test(text);
+    const hasReversalIntent = /短剧|爽|打脸|逆袭|反杀|翻盘|被看不起|羞辱|退婚|雪藏|网暴|抢走|压制/.test(text);
+
+    if (hasSuspenseIntent) {
+        return null;
+    }
+
+    if (hasWealthIntent && hasBusinessIntent) {
+        return {
+            story_class: '经营积累',
+            route: hasReversalIntent ? 'short_drama' : 'general_story',
+            style: hasReversalIntent ? '爽文推进' : '写实压迫',
+            meta_theme: '现实逆袭',
+            system_type: /神豪|消费|花钱|一千万|暴富|到账|现金/.test(text) ? '神豪消费' : undefined,
+        };
+    }
+
+    if (hasWealthIntent || hasReversalIntent) {
+        return {
+            story_class: '打脸逆袭',
+            route: 'short_drama',
+            style: '爽文推进',
+            meta_theme: '现实逆袭',
+            system_type: hasWealthIntent ? '神豪消费' : undefined,
+        };
+    }
+
+    return null;
+}
+
 function normalizeGeneratedStory(rawStory, seedText, uiProfiles) {
     const allowedClasses = getAllowedStoryClasses(uiProfiles);
-    const storyClass = allowedClasses.includes(rawStory?.story_class) ? rawStory.story_class : '通用';
-    const route = CUSTOM_STORY_ROUTES.has(rawStory?.route) ? rawStory.route : 'general_story';
-    const style = CUSTOM_STORY_STYLES.has(rawStory?.style) ? rawStory.style : '细腻沉浸';
+    const intent = getCustomStoryIntent(seedText);
+    const storyClassSeed = intent?.story_class ?? rawStory?.story_class;
+    const routeSeed = intent?.route ?? rawStory?.route;
+    const styleSeed = intent?.style ?? rawStory?.style;
+    const storyClass = allowedClasses.includes(storyClassSeed) ? storyClassSeed : '通用';
+    const route = CUSTOM_STORY_ROUTES.has(routeSeed) ? routeSeed : 'general_story';
+    const style = CUSTOM_STORY_STYLES.has(styleSeed) ? styleSeed : '细腻沉浸';
     const constraints = normalizeStringArray(rawStory?.custom_constraints, [
         '行动必须经过世界规则校验',
         '每一幕都要产生清晰后果',
@@ -174,9 +212,9 @@ function normalizeGeneratedStory(rawStory, seedText, uiProfiles) {
         spacetime: normalizeString(rawStory?.spacetime, '用户自定义时空', 80),
         theme: normalizeString(rawStory?.theme, seedText, 90),
         protagonist_setup: normalizeString(rawStory?.protagonist_setup, '由玩家昵称定义的入局者', 90),
-        system_type: normalizeString(rawStory?.system_type, '无', 36),
+        system_type: normalizeString(intent?.system_type ?? rawStory?.system_type, '无', 36),
         custom_constraints: constraints,
-        meta_theme: normalizeString(rawStory?.meta_theme, storyClass, 36),
+        meta_theme: normalizeString(intent?.meta_theme ?? rawStory?.meta_theme, storyClass, 36),
         story_class: storyClass,
         style,
         route,
@@ -200,6 +238,12 @@ function buildCustomStoryPrompt(seedText, uiProfiles = {}) {
         `story_class 必须从这些中文值中选择：${storyClasses.join('、')}`,
         'route 必须从这些英文值中选择：general_story、short_drama、immersive_novel、romance_tension、suspense_investigation、power_game、healing_growth',
         'style 必须从这些中文值中选择：写实压迫、细腻沉浸、爽文推进、黑色幽默',
+        '',
+        '分类倾向：',
+        '- 不要把模糊脑洞默认写成悬疑。只有用户明确要求悬疑、破案、调查、真相、怪谈、失踪、诡异、规则异常时，才优先选择 story_class=悬疑烧脑 或 route=suspense_investigation。',
+        '- 用户提到“一千万、突然暴富、神豪、到账、彩票、花钱、消费、被看不起后翻盘”等财富/逆袭爽点时，默认 story_class=打脸逆袭，route=short_drama，style=爽文推进；重点是压制、诱惑、消费选择、公开反应和筹码变化，不要写成无脑炫富。',
+        '- 用户提到创业、经营、开店、公司、生意、投资、现金流、市场窗口时，默认 story_class=经营积累；若同时有打脸/短剧/逆袭诉求，route=short_drama，否则用 general_story。',
+        '- 大众默认体验偏短剧式快速入局：开场三段内出现压迫、诱惑、争夺、地位落差或必须决策的问题。',
         '',
         '只输出 JSON，不要 Markdown，不要解释。JSON 字段必须严格为：',
         '{"title":"","spacetime":"","theme":"","protagonist_setup":"","system_type":"","custom_constraints":["","",""],"meta_theme":"","story_class":"","style":"","route":"","opening":""}',
@@ -335,6 +379,7 @@ function buildFallbackMessages({ body, story, uiProfiles, corePrompt, turnPrompt
             pending_foreshadows: state.pending_foreshadows ?? [],
             active_hooks: state.active_hooks ?? [],
             important_branches: state.important_branches ?? [],
+            last_options: Array.isArray(state.last_options) ? state.last_options : [],
             near_ending: state.near_ending ?? false,
             visible_stats: visibleStats,
         }, null, 2),
