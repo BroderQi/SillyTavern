@@ -945,9 +945,9 @@ function parseScene(text) {
     const ending = getSection(text, '结局');
     if (ending || meta?.is_ending) {
         return {
-            title: meta?.title || '结局',
-            screen: meta?.screen || '',
-            plot: stripDayDreamMeta(text) || ending,
+            title: getSection(text, '标题') || meta?.title || '结局',
+            screen: getSection(text, '环境') || getSection(text, '画面') || meta?.screen || '',
+            plot: ending || stripDayDreamMeta(text),
             status: formatStatusChanges(meta, ''),
             options: [],
             isEnding: true,
@@ -959,8 +959,8 @@ function parseScene(text) {
     const legacyPlot = getSection(text, '剧情');
     const plot = legacyPlot || visibleText || text;
     return {
-        title: meta?.title || getSection(text, '标题') || plot.split('\n').find(line => line.trim())?.slice(0, 16) || '',
-        screen: meta?.screen || getSection(text, '环境') || getSection(text, '画面'),
+        title: getSection(text, '标题') || meta?.title || plot.split('\n').find(line => line.trim())?.slice(0, 16) || '',
+        screen: getSection(text, '环境') || getSection(text, '画面') || meta?.screen,
         plot,
         status: formatStatusChanges(meta, getSection(text, '状态变化')),
         options: parseOptions(text, meta),

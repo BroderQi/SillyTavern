@@ -563,14 +563,25 @@ function formatStatusChanges(meta, fallback) {
     return fallback || '';
 }
 
+function parseVisibleScene(text) {
+    const visibleText = stripDayDreamMeta(text);
+    const hasStructuredLabels = /【(?:标题|环境|画面|剧情|选项|行动选项|结局)】/.test(visibleText);
+    return {
+        title: getSection(visibleText, '标题'),
+        screen: getSection(visibleText, '环境') || getSection(visibleText, '画面'),
+        plot: getSection(visibleText, '剧情') || getSection(visibleText, '结局') || (hasStructuredLabels ? '' : visibleText),
+        options: parseOptions(visibleText, null),
+    };
+}
+
 function parseReply(text) {
     const meta = parseDayDreamMeta(text);
     const ending = getSection(text, '结局');
     if (ending || meta?.is_ending) {
-        const visibleEnding = stripDayDreamMeta(text) || ending;
+        const visibleEnding = ending || stripDayDreamMeta(text);
         return {
-            title: meta?.title || '结局',
-            screen: meta?.screen || '',
+            title: getSection(text, '标题') || meta?.title || '结局',
+            screen: getSection(text, '环境') || getSection(text, '画面') || meta?.screen || '',
             plot: visibleEnding,
             status: formatStatusChanges(meta, ''),
             options: [],
@@ -583,8 +594,8 @@ function parseReply(text) {
     const legacyPlot = getSection(text, '剧情');
     const plot = legacyPlot || visibleText || text;
     return {
-        title: meta?.title || getSection(text, '标题') || plot.split('\n').find(line => line.trim())?.slice(0, 16) || '',
-        screen: meta?.screen || getSection(text, '环境') || getSection(text, '画面'),
+        title: getSection(text, '标题') || meta?.title || plot.split('\n').find(line => line.trim())?.slice(0, 16) || '',
+        screen: getSection(text, '环境') || getSection(text, '画面') || meta?.screen,
         plot,
         status: formatStatusChanges(meta, getSection(text, '状态变化')),
         options: parseOptions(text, meta),
@@ -663,13 +674,24 @@ function applyMetaUpdates(state, meta) {
 }
 
 function renderStreamingReply(story, text) {
-    const liveBody = stripDayDreamMeta(text);
+    const scene = parseVisibleScene(text);
+    const optionHtml = scene.options.length
+        ? `<section class="dd-options">${scene.options.map(option => `
+            <button class="dd-option" disabled>
+                <b>${option.index}</b>
+                <span>${escapeHtml(option.text)}</span>
+            </button>
+        `).join('')}</section>`
+        : '';
 
     qs('#dd_content').innerHTML = `
         <section class="dd-card">
             <div class="dd-kicker">${escapeHtml(story?.story_class || '生成中')}</div>
-            ${liveBody ? `<div class="dd-plot">${formatText(liveBody)}</div>` : '<div class="dd-empty">DayDream 正在生成下一幕...</div>'}
+            ${scene.title ? `<h2>${escapeHtml(scene.title)}</h2>` : ''}
+            ${scene.screen ? `<div class="dd-screen">${formatText(scene.screen)}</div>` : ''}
+            ${scene.plot ? `<div class="dd-plot">${formatText(scene.plot)}</div>` : '<div class="dd-empty">DayDream 正在生成下一幕...</div>'}
         </section>
+        ${optionHtml}
     `;
 }
 
