@@ -534,7 +534,7 @@ function parseOptions(text, meta) {
             .slice(0, 4);
     }
 
-    return getSection(text, '行动选项')
+    return (getSection(text, '选项') || getSection(text, '行动选项'))
         .split('\n')
         .map(line => line.match(/^\s*([1-4])[.、:：]\s*(.+?)\s*$/))
         .filter(Boolean)
@@ -584,7 +584,7 @@ function parseReply(text) {
     const plot = legacyPlot || visibleText || text;
     return {
         title: meta?.title || getSection(text, '标题') || plot.split('\n').find(line => line.trim())?.slice(0, 16) || '',
-        screen: meta?.screen || getSection(text, '画面'),
+        screen: meta?.screen || getSection(text, '环境') || getSection(text, '画面'),
         plot,
         status: formatStatusChanges(meta, getSection(text, '状态变化')),
         options: parseOptions(text, meta),
@@ -668,7 +668,6 @@ function renderStreamingReply(story, text) {
     qs('#dd_content').innerHTML = `
         <section class="dd-card">
             <div class="dd-kicker">${escapeHtml(story?.story_class || '生成中')}</div>
-            <h2>正在推进剧情</h2>
             ${liveBody ? `<div class="dd-plot">${formatText(liveBody)}</div>` : '<div class="dd-empty">DayDream 正在生成下一幕...</div>'}
         </section>
     `;

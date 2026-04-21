@@ -150,7 +150,7 @@ function buildMessages({ body, story, uiProfiles, corePrompt, turnPrompt, ending
             tabs: (profile.tabs ?? []).map(tab => ({ key: tab.key, label: tab.label })),
         }, null, 2),
         '',
-        '【DayDream 元数据要求】状态、事件、资源、关系、伏笔、选项都必须写入末尾 `<!-- DAYDREAM_META ... -->` JSON 注释块。正文不要展示结构字段名。状态更新优先使用当前可见 UI 中存在的状态 key，不要发明与当前剧本无关的属性名。',
+        '【DayDream 输出顺序】可见正文必须先按【标题】、【环境】、【剧情】、【选项】输出，方便用户跟随流式内容阅读。状态、事件、资源、关系、伏笔和属性结算必须写入末尾 `<!-- DAYDREAM_META ... -->` JSON 注释块。状态更新优先使用当前可见 UI 中存在的状态 key，不要发明与当前剧本无关的属性名。',
         '',
         turnPrompt,
         isEnding ? `\n${endingPrompt}` : '',
