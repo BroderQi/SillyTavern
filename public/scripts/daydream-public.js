@@ -187,7 +187,9 @@ function setShellMode(mode) {
 }
 
 function renderHeader(title, subtitle, mode = 'preplay') {
-    qs('#dd_story_title').textContent = title || 'DayDreamer';
+    const titleElement = qs('#dd_story_title');
+    titleElement.textContent = title || '';
+    titleElement.hidden = !title;
     qs('#dd_story_class').textContent = subtitle || '世界引擎';
     setShellMode(mode);
 }
@@ -1093,7 +1095,7 @@ function renderLibrary() {
     currentView = 'library';
     selectedStoryDraft = null;
     hideSetup();
-    renderHeader('故事库', '选择一个世界进入白日梦', 'preplay');
+    renderHeader('', '选择一个世界进入白日梦', 'preplay');
 
     const list = getFilteredStories();
     qs('#dd_content').innerHTML = `
@@ -1102,8 +1104,8 @@ function renderLibrary() {
                 <span>${list.length} / ${stories.length} 个故事</span>
                 ${(libraryFilters.spacetime || libraryFilters.theme) ? '<button id="dd_clear_filters" class="dd-filter-clear">全部故事</button>' : ''}
             </div>
-            ${renderCategoryNav('时空分类', 'spacetime', SPACETIME_TAGS)}
             ${renderCategoryNav('主题分类', 'theme', THEME_TAGS)}
+            ${renderCategoryNav('时空分类', 'spacetime', SPACETIME_TAGS)}
             <section class="dd-story-grid" aria-label="故事库">
                 ${list.map((story, index) => renderStoryCard(story, index)).join('') || '<div class="dd-empty">这个组合暂时没有故事。</div>'}
             </section>
