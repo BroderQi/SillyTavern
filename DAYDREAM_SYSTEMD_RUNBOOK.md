@@ -4,9 +4,9 @@
 cd /opt/SillyTavern
 git pull
 
-cat /opt/SillyTavern/deploy/nginx/bkgf-DayDream.conf > /etc/nginx/conf.d/bkgf-DayDream.conf
+cat /opt/SillyTavern/deploy/nginx/bkgf-daydream.conf > /etc/nginx/conf.d/bkgf-daydream.conf
 nginx -t && systemctl reload nginx
-systemctl restart DayDreamer-sillytavern
+systemctl restart daydream-sillytavern
 curl -I https://bkgf.net/ | grep -i referrer-policy
 
 如果第一个 `grep` 没有输出，说明服务器代码还没拉到包含 `Referrer-Policy` 的版本。如果第二个 `grep` 没有输出，说明配置没有复制到 `/etc/nginx/conf.d/`。如果两个 `grep` 都有输出但仍然显示 `referrer-policy: no-referrer`，检查 Nginx 最终加载配置：
@@ -92,7 +92,7 @@ chmod 600 /etc/DayDreamer.env
 创建服务文件：
 
 ```bash
-nano /etc/systemd/system/DayDreamer-sillytavern.service
+nano /etc/systemd/system/daydream-sillytavern.service
 ```
 
 写入：
@@ -112,7 +112,7 @@ Restart=always
 RestartSec=5
 TimeoutStopSec=30
 KillSignal=SIGINT
-SyslogIdentifier=DayDreamer-sillytavern
+SyslogIdentifier=daydream-sillytavern
 
 [Install]
 WantedBy=multi-user.target
@@ -130,20 +130,20 @@ which node
 
 ```bash
 systemctl daemon-reload
-systemctl enable DayDreamer-sillytavern
-systemctl start DayDreamer-sillytavern
+systemctl enable daydream-sillytavern
+systemctl start daydream-sillytavern
 ```
 
 查看状态：
 
 ```bash
-systemctl status DayDreamer-sillytavern --no-pager
+systemctl status daydream-sillytavern --no-pager
 ```
 
 看实时日志：
 
 ```bash
-journalctl -u DayDreamer-sillytavern -f
+journalctl -u daydream-sillytavern -f
 ```
 
 ## 6. 本机验收
@@ -160,7 +160,7 @@ curl -s http://127.0.0.1:8000/api/DayDreamer/bootstrap | head
 如果这里不通，不要先动 Nginx，先查：
 
 ```bash
-journalctl -u DayDreamer-sillytavern -n 100 --no-pager
+journalctl -u daydream-sillytavern -n 100 --no-pager
 ```
 
 ## 7. Nginx 配置
@@ -211,8 +211,8 @@ node --check src/endpoints/daydream.js
 node --check public/scripts/daydream-public.js
 node --check public/scripts/sse-core-stream.js
 node --check src/server-main.js
-systemctl restart DayDreamer-sillytavern
-systemctl status DayDreamer-sillytavern --no-pager
+systemctl restart daydream-sillytavern
+systemctl status daydream-sillytavern --no-pager
 ```
 
 如果 Nginx 配置也改了：
@@ -236,31 +236,31 @@ curl -I https://bkgf.net/api/settings/get
 重启：
 
 ```bash
-systemctl restart DayDreamer-sillytavern
+systemctl restart daydream-sillytavern
 ```
 
 停止：
 
 ```bash
-systemctl stop DayDreamer-sillytavern
+systemctl stop daydream-sillytavern
 ```
 
 启动：
 
 ```bash
-systemctl start DayDreamer-sillytavern
+systemctl start daydream-sillytavern
 ```
 
 查看最近日志：
 
 ```bash
-journalctl -u DayDreamer-sillytavern -n 100 --no-pager
+journalctl -u daydream-sillytavern -n 100 --no-pager
 ```
 
 实时日志：
 
 ```bash
-journalctl -u DayDreamer-sillytavern -f
+journalctl -u daydream-sillytavern -f
 ```
 
 查看端口：
@@ -273,7 +273,7 @@ ss -lntp | grep 8000
 
 ```bash
 nano /etc/DayDreamer.env
-systemctl restart DayDreamer-sillytavern
+systemctl restart daydream-sillytavern
 ```
 
 ## 10. 回滚
@@ -285,7 +285,7 @@ cd /opt/SillyTavern
 git log --oneline -5
 git checkout 上一个可用commit
 npm install
-systemctl restart DayDreamer-sillytavern
+systemctl restart daydream-sillytavern
 ```
 
 如果 Nginx 异常，恢复备份：
