@@ -6,21 +6,22 @@ import fetch from 'node-fetch';
 
 import { serverDirectory } from '../server-directory.js';
 import { forwardFetchResponse, getConfigValue, safeReadFileSync } from '../util.js';
-import { readInternalJson } from '../DayDreamer-st/internal-api.js';
+import { callInternalApi, readInternalJson } from '../daydream-st/internal-api.js';
 import {
     listSillyTavernResources,
     assembleDayDreamerGeneration,
     getProviderSummaryFromSettings,
     persistDayDreamerTurn,
     readUserSettings,
-} from '../DayDreamer-st/orchestration.js';
-import { dispatchViaSillyTavern } from '../DayDreamer-st/provider-dispatch.js';
-import { createSession, loadSession, saveSession, upsertSession } from '../DayDreamer-st/session-store.js';
-import { proxyEventStream } from '../DayDreamer-st/streaming.js';
+} from '../daydream-st/orchestration.js';
+import { dispatchViaSillyTavern } from '../daydream-st/provider-dispatch.js';
+import { createSession, loadSession, saveSession, upsertSession } from '../daydream-st/session-store.js';
+import { buildProviderBody } from '../daydream-st/prompt-assembly.js';
+import { proxyEventStream } from '../daydream-st/streaming.js';
 
 export const router = express.Router();
 
-const DayDreamer_DIR = path.join(serverDirectory, 'public', 'scripts', 'extensions', 'third-party', 'DayDreamer');
+const DayDreamer_DIR = path.join(serverDirectory, 'public', 'scripts', 'extensions', 'third-party', 'daydream');
 const STORIES_PATH = path.join(DayDreamer_DIR, 'data', 'stories.json');
 const UI_PROFILES_PATH = path.join(DayDreamer_DIR, 'data', 'ui-profiles.json');
 const CORE_PROMPT_PATH = path.join(DayDreamer_DIR, 'prompts', 'engine-core.md');
@@ -30,6 +31,17 @@ const ENDING_PROMPT_PATH = path.join(DayDreamer_DIR, 'prompts', 'ending.md');
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const DEFAULT_MODEL = 'gpt-4o-mini';
 const MAX_MESSAGE_LENGTH = 4000;
+const CUSTOM_STORY_MAX_LENGTH = 2000;
+const CUSTOM_STORY_ROUTES = new Set([
+    'general_story',
+    'short_drama',
+    'immersive_novel',
+    'romance_tension',
+    'suspense_investigation',
+    'power_game',
+    'healing_growth',
+]);
+const CUSTOM_STORY_STYLES = new Set(['写实压迫', '细腻沉浸', '爽文推进', '黑色幽默']);
 
 function readJson(filePath, fallback) {
     try {
@@ -94,6 +106,164 @@ function compact(value, fallback) {
     }
 
     return value;
+}
+
+function extractAssistantText(payload) {
+    const choice = payload?.choices?.[0];
+    return choice?.message?.content ?? choice?.delta?.content ?? choice?.text ?? '';
+}
+
+function extractJsonObject(text) {
+    const source = String(text ?? '').trim();
+    if (!source) {
+        throw new Error('Empty custom story response.');
+    }
+
+    try {
+        return JSON.parse(source);
+    } catch {
+        const fenced = source.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
+        if (fenced) {
+            return JSON.parse(fenced);
+        }
+
+        const start = source.indexOf('{');
+        const end = source.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            return JSON.parse(source.slice(start, end + 1));
+        }
+
+        throw new Error('Custom story response did not contain JSON.');
+    }
+}
+
+function normalizeString(value, fallback, maxLength = 120) {
+    const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+    return (text || fallback).slice(0, maxLength);
+}
+
+function normalizeStringArray(value, fallback, maxItems = 3, maxLength = 80) {
+    const array = Array.isArray(value) ? value : fallback;
+    return array
+        .map(item => normalizeString(item, '', maxLength))
+        .filter(Boolean)
+        .slice(0, maxItems);
+}
+
+function getAllowedStoryClasses(uiProfiles = {}) {
+    const keys = Object.keys(uiProfiles).filter(Boolean);
+    return keys.length ? keys : ['通用'];
+}
+
+function normalizeGeneratedStory(rawStory, seedText, uiProfiles) {
+    const allowedClasses = getAllowedStoryClasses(uiProfiles);
+    const storyClass = allowedClasses.includes(rawStory?.story_class) ? rawStory.story_class : '通用';
+    const route = CUSTOM_STORY_ROUTES.has(rawStory?.route) ? rawStory.route : 'general_story';
+    const style = CUSTOM_STORY_STYLES.has(rawStory?.style) ? rawStory.style : '细腻沉浸';
+    const constraints = normalizeStringArray(rawStory?.custom_constraints, [
+        '行动必须经过世界规则校验',
+        '每一幕都要产生清晰后果',
+        '关键矛盾不能一次说穿',
+    ]);
+    const openingText = normalizeString(rawStory?.opening, seedText, 96).replace(/^开场：?/, '');
+
+    return {
+        id: null,
+        is_custom: true,
+        title: normalizeString(rawStory?.title, '自定义故事', 18),
+        spacetime: normalizeString(rawStory?.spacetime, '用户自定义时空', 80),
+        theme: normalizeString(rawStory?.theme, seedText, 90),
+        protagonist_setup: normalizeString(rawStory?.protagonist_setup, '由玩家昵称定义的入局者', 90),
+        system_type: normalizeString(rawStory?.system_type, '无', 36),
+        custom_constraints: constraints,
+        meta_theme: normalizeString(rawStory?.meta_theme, storyClass, 36),
+        story_class: storyClass,
+        style,
+        route,
+        opening: `开场：${openingText}`,
+        seed_text: seedText,
+    };
+}
+
+function buildCustomStoryPrompt(seedText, uiProfiles = {}) {
+    const storyClasses = getAllowedStoryClasses(uiProfiles);
+    return [
+        '你是 DayDreamer 的世界创建器。请根据用户输入，先按五维法则提炼世界，再生成一个可直接写入 stories.json 的单个故事对象。',
+        '',
+        '五维法则：',
+        '1. spacetime：时代/地区/文明层级/社会条件，决定技术上限与制度边界。',
+        '2. theme：核心驱动力，决定主要冲突形态。',
+        '3. protagonist_setup：主角身份+位置+处境+优势短板。',
+        '4. system_type：显性玩法机制；没有就写“无”。',
+        '5. custom_constraints：三条不可违背的世界规则，每条短而具体。',
+        '',
+        `story_class 必须从这些中文值中选择：${storyClasses.join('、')}`,
+        'route 必须从这些英文值中选择：general_story、short_drama、immersive_novel、romance_tension、suspense_investigation、power_game、healing_growth',
+        'style 必须从这些中文值中选择：写实压迫、细腻沉浸、爽文推进、黑色幽默',
+        '',
+        '只输出 JSON，不要 Markdown，不要解释。JSON 字段必须严格为：',
+        '{"title":"","spacetime":"","theme":"","protagonist_setup":"","system_type":"","custom_constraints":["","",""],"meta_theme":"","story_class":"","style":"","route":"","opening":""}',
+        '',
+        '要求：',
+        '- title 2 到 8 个中文字符，像故事库标题，不要叫“自定义故事”。',
+        '- opening 必须以“开场：”开头，并给出第一幕的具体触发事件。',
+        '- 内容必须使用简体中文。',
+        '',
+        `[用户输入]\n${seedText}`,
+    ].join('\n');
+}
+
+async function readCompletionJsonResponse(response) {
+    const payload = await response.json();
+    if (payload?.error) {
+        throw new Error(payload.error?.message || payload.error || 'Custom story generation failed.');
+    }
+    return extractAssistantText(payload);
+}
+
+async function generateCustomStoryViaSillyTavern(request, messages, settings, fallbackProvider) {
+    const providerBody = {
+        ...buildProviderBody(settings, messages, fallbackProvider),
+        stream: false,
+        temperature: 0.72,
+        max_tokens: Math.min(Number(fallbackProvider.responseTokens || 1200), 1400),
+    };
+    const upstream = await callInternalApi(request, '/api/backends/chat-completions/generate', {
+        method: 'POST',
+        body: providerBody,
+        accept: 'application/json',
+    });
+
+    if (!upstream.ok) {
+        const errorText = await upstream.text().catch(() => '');
+        throw new Error(`SillyTavern custom story dispatch failed: ${upstream.status} ${errorText}`);
+    }
+
+    return await readCompletionJsonResponse(upstream);
+}
+
+async function generateCustomStoryViaFallback(fallbackProvider, messages) {
+    const upstream = await fetch(`${fallbackProvider.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${fallbackProvider.apiKey}`,
+        },
+        body: JSON.stringify({
+            model: fallbackProvider.model,
+            messages,
+            temperature: 0.72,
+            max_tokens: Math.min(Number(fallbackProvider.responseTokens || 1200), 1400),
+            stream: false,
+        }),
+    });
+
+    if (!upstream.ok) {
+        const errorText = await upstream.text().catch(() => '');
+        throw new Error(`Fallback custom story dispatch failed: ${upstream.status} ${errorText}`);
+    }
+
+    return await readCompletionJsonResponse(upstream);
 }
 
 function getBaseProfile(uiProfiles = {}) {
@@ -314,6 +484,46 @@ router.post('/session/save', (request, response) => {
     });
 
     response.json(session);
+});
+
+router.post('/custom-story', async (request, response) => {
+    const fallbackProvider = getFallbackProviderConfig();
+    const seedText = String(request.body?.text ?? '').trim().slice(0, CUSTOM_STORY_MAX_LENGTH);
+
+    if (!seedText) {
+        return response.status(400).json({ error: '请输入一个自定义游戏设定。' });
+    }
+
+    if (!request.user?.directories && !fallbackProvider.enabled) {
+        return response.status(503).json({
+            error: '服务器尚未配置 DayDreamer 模型。请让管理员设置 DayDreamer_API_KEY，或登录后使用 SillyTavern 模型配置。',
+        });
+    }
+
+    const uiProfiles = readJson(UI_PROFILES_PATH, {});
+    const messages = [
+        {
+            role: 'system',
+            content: buildCustomStoryPrompt(seedText, uiProfiles),
+        },
+        {
+            role: 'user',
+            content: '生成 stories.json 兼容的单个故事对象。',
+        },
+    ];
+
+    try {
+        const text = request.user?.directories
+            ? await generateCustomStoryViaSillyTavern(request, messages, readUserSettings(request), fallbackProvider)
+            : await generateCustomStoryViaFallback(fallbackProvider, messages);
+        const rawStory = extractJsonObject(text);
+        const story = normalizeGeneratedStory(rawStory, seedText, uiProfiles);
+
+        return response.json({ story });
+    } catch (error) {
+        console.error('DayDreamer custom story generation failed:', error);
+        return response.status(500).json({ error: '虚拟世界创建失败，请稍后再试。' });
+    }
 });
 
 router.post('/generate', async (request, response) => {

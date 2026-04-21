@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DayDreamer 世界引擎</title>
-    <link rel="stylesheet" href="/scripts/DayDreamer-public.css">
+    <link rel="stylesheet" href="/scripts/daydream-public.css">
     <script>
         var _hmt = _hmt || [];
         (function () {
@@ -27,7 +27,11 @@
                     <h1 id="dd_story_title">DayDreamer</h1>
                     <span id="dd_story_class" class="dd-story-class">世界引擎</span>
                 </div>
-                <button id="dd_open_setup" class="dd-icon-btn" title="选择故事">重开</button>
+                <div class="dd-header-actions">
+                    <button id="dd_quick_random" class="dd-top-action" title="随机开始">随机开始</button>
+                    <button id="dd_quick_custom" class="dd-top-action" title="自定义游戏">自定义游戏</button>
+                    <button id="dd_open_setup" class="dd-icon-btn" title="故事库">故事库</button>
+                </div>
             </header>
 
             <section id="dd_stats" class="dd-stats"></section>
@@ -48,7 +52,7 @@
     <script>
         window.addEventListener('error', function (event) {
             const target = event.target;
-            if (target instanceof HTMLScriptElement && target.src.includes('/scripts/DayDreamer-public.js')) {
+            if (target instanceof HTMLScriptElement && target.src.includes('/scripts/daydream-public.js')) {
                 const content = document.getElementById('dd_content');
                 if (content) {
                     content.innerHTML = '<section class="dd-card"><div class="dd-error">DayDreamer 脚本加载失败，请检查 Nginx 静态资源白名单。</div></section>';
@@ -64,6 +68,6 @@
             }
         });
     </script>
-    <script type="module" src="/scripts/DayDreamer-public.js"></script>
+    <script type="module" src="/scripts/daydream-public.js"></script>
 </body>
 </html>

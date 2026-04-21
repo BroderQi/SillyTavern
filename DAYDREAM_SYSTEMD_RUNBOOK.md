@@ -207,8 +207,8 @@ https://bkgf.net/api/settings/get 404
 cd /opt/SillyTavern
 git pull
 npm install
-node --check src/endpoints/DayDreamer.js
-node --check public/scripts/DayDreamer-public.js
+node --check src/endpoints/daydream.js
+node --check public/scripts/daydream-public.js
 node --check public/scripts/sse-core-stream.js
 node --check src/server-main.js
 systemctl restart DayDreamer-sillytavern

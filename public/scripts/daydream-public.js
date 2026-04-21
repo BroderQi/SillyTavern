@@ -4,12 +4,27 @@ const STORAGE_KEY = 'DayDreamer_public_state_v1';
 const HISTORY_KEY = 'DayDreamer_public_history_v1';
 const MAX_VISIBLE_HISTORY = 0;
 
-const FILTER_DIMENSIONS = [
-    { key: 'spacetime', label: '时空背景' },
-    { key: 'theme', label: '核心题材' },
-    { key: 'protagonist_setup', label: '主角设定' },
-    { key: 'system_type', label: '系统机制' },
-    { key: 'story_class', label: '玩法爽点' },
+const SPACETIME_TAGS = ['历史现实', '当代现实', '近未来科幻', '远未来星际', '架空古代', '奇幻异界', '末日废土', '校园都市', '多元宇宙'];
+const THEME_TAGS = ['权谋', '商战', '悬疑', '生存', '情感', '成长', '逆袭', '经营', '职场', '冒险', '战争', '校园', '医疗', '娱乐'];
+const ROUTE_LABELS = {
+    general_story: '通用稳健',
+    short_drama: '短剧强反馈',
+    immersive_novel: '沉浸细节',
+    romance_tension: '情感拉扯',
+    suspense_investigation: '悬疑调查',
+    power_game: '权谋博弈',
+    healing_growth: '治愈成长',
+};
+const COVER_PALETTES = [
+    ['#245a53', '#9b6b41', '#eef4ed'],
+    ['#374f86', '#c26d3d', '#f7efe3'],
+    ['#6b3f67', '#d39c49', '#f6eef4'],
+    ['#244b5a', '#7ca982', '#eef6f3'],
+    ['#5b3a2e', '#b85c38', '#fbf0df'],
+    ['#25304f', '#7f8bc8', '#edf0fb'],
+    ['#405d3d', '#d2a24c', '#f2f5e8'],
+    ['#703d4b', '#d7837f', '#faeeee'],
+    ['#2f4f4a', '#d1b45f', '#f5f2df'],
 ];
 
 const defaultStats = {
@@ -65,6 +80,10 @@ let csrfToken = '';
 let activeTab = 'story';
 let isGenerating = false;
 let pendingAction = '';
+let currentView = null;
+let libraryFilters = { spacetime: '', theme: '' };
+let selectedStoryDraft = null;
+let customStoryRequestId = 0;
 
 function qs(selector) {
     return document.querySelector(selector);
@@ -77,6 +96,100 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+function hashString(value) {
+    return [...String(value ?? '')].reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) | 0, 0);
+}
+
+function compactText(value, maxLength = 42) {
+    const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+    return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function classifySpacetime(story) {
+    const text = `${story?.spacetime ?? ''} ${story?.theme ?? ''} ${story?.story_class ?? ''}`;
+    if (/多元|宇宙缝隙|交汇|记忆交易/.test(text)) return '多元宇宙';
+    if (/远未来|星港|星海|星际|宇宙|自由星港/.test(text)) return '远未来星际';
+    if (/近未来|算法|数据|生物|科技|巨型城市|极地物流|自由星港/.test(text)) return '近未来科幻';
+    if (/高魔|魔法|秘库|奇幻|异界|学院高塔/.test(text)) return '奇幻异界';
+    if (/末日|后末日|崩溃|灾|封锁|气候异常|废土/.test(text)) return '末日废土';
+    if (/学校|校园|高中|大学|书院|寄宿/.test(text)) return '校园都市';
+    if (/架空古代|王朝|深宫|边塞|都城|古代|清末|盐运/.test(text)) return '架空古代';
+    if (/193|198|199|197|2003|近代|租界|码头|历史|战时/.test(text)) return '历史现实';
+    return '当代现实';
+}
+
+function classifyTheme(story) {
+    const text = `${story?.story_class ?? ''} ${story?.theme ?? ''} ${story?.meta_theme ?? ''} ${story?.route ?? ''}`;
+    if (/商|金融|审计|电商|现金|市场|集团|经营/.test(text)) return /经营|积累/.test(text) ? '经营' : '商战';
+    if (/权|站队|体系|宫|博弈|筹码|官署/.test(text)) return '权谋';
+    if (/悬疑|追查|旧案|线索|真相|案|异常|烧脑/.test(text)) return '悬疑';
+    if (/危机|求生|雪灾|末日|物资|崩溃|封锁|生存/.test(text)) return '生存';
+    if (/情感|好感|拉扯|社交季|关系/.test(text)) return '情感';
+    if (/治愈|成长|校园|高中|少年/.test(text)) return /校园|高中|大学/.test(text) ? '校园' : '成长';
+    if (/打脸|逆袭|翻身/.test(text)) return '逆袭';
+    if (/职场|公司|运营|行业|新人|工位/.test(text)) return '职场';
+    if (/冒险|边境|探索|星海|口岸/.test(text)) return '冒险';
+    if (/战|军|边塞|中立都市/.test(text)) return '战争';
+    if (/医院|医生|住院|医疗/.test(text)) return '医疗';
+    if (/娱乐|短剧|镜头|主演|戏院|直播/.test(text)) return '娱乐';
+    return story?.story_class === '经营积累' ? '经营' : '成长';
+}
+
+function getStoryTags(story) {
+    return [
+        classifySpacetime(story),
+        classifyTheme(story),
+        story?.story_class,
+    ].filter(Boolean);
+}
+
+function getRouteLabel(route) {
+    return ROUTE_LABELS[route] ?? route ?? ROUTE_LABELS.general_story;
+}
+
+function getCoverPalette(story) {
+    const index = Math.abs(hashString(story?.title || story?.opening || story?.theme)) % COVER_PALETTES.length;
+    return COVER_PALETTES[index];
+}
+
+function getCoverStyle(story) {
+    const [a, b, c] = getCoverPalette(story);
+    return `--cover-a:${a};--cover-b:${b};--cover-c:${c};`;
+}
+
+function getWorldview(story) {
+    const constraints = (story?.custom_constraints ?? []).filter(Boolean).join('；');
+    const lines = [
+        `这是一个发生在${story?.spacetime || '未知时空'}的故事。${story?.theme ? `核心矛盾围绕${story.theme}展开。` : ''}`,
+        `${story?.protagonist_setup ? `你将以${story.protagonist_setup}的身份入局。` : ''}${story?.opening ? `第一幕从“${story.opening.replace(/^开场：?/, '')}”开始。` : ''}`,
+        constraints ? `世界规则：${constraints}。` : '',
+        `${story?.style ? `叙事风格偏向${story.style}。` : ''}${story?.system_type && story.system_type !== '无' ? `机制：${story.system_type}。` : ''}`,
+    ].filter(Boolean);
+    return lines.join('\n\n');
+}
+
+function renderTagPills(tags) {
+    return tags.map(tag => `<span class="dd-tag-pill">${escapeHtml(tag)}</span>`).join('');
+}
+
+function setShellMode(mode) {
+    const shell = qs('.dd-shell');
+    shell?.classList.toggle('dd-preplay', mode !== 'play');
+    shell?.classList.toggle('dd-playing', mode === 'play');
+    qs('#dd_stats').hidden = mode !== 'play';
+    qs('#dd_custom_action').closest('.dd-action-bar').hidden = mode !== 'play';
+    qs('#dd_tabs').hidden = mode !== 'play';
+    qs('#dd_quick_random').hidden = mode === 'play';
+    qs('#dd_quick_custom').hidden = mode === 'play';
+    qs('#dd_open_setup').hidden = mode !== 'play';
+}
+
+function renderHeader(title, subtitle, mode = 'preplay') {
+    qs('#dd_story_title').textContent = title || 'DayDreamer';
+    qs('#dd_story_class').textContent = subtitle || '世界引擎';
+    setShellMode(mode);
 }
 
 function createDefaultStContext() {
@@ -105,6 +218,7 @@ function createState() {
         story_id: null,
         story_title: '',
         custom_story: '',
+        custom_story_data: null,
         route: 'general_story',
         story_class: '',
         st_context: createDefaultStContext(),
@@ -257,6 +371,8 @@ function getStory(state = loadState()) {
             style: '细腻沉浸',
             route: state.route || 'general_story',
             opening: state.custom_story,
+            ...(state.custom_story_data ?? {}),
+            is_custom: true,
         };
     }
 
@@ -297,19 +413,27 @@ let bootstrap = async function () {
 function render() {
     const state = loadState();
     const story = getStory(state);
+
+    if (currentView === 'detail' && selectedStoryDraft) {
+        return renderStoryDetail(selectedStoryDraft);
+    }
+
+    if (currentView === 'custom') {
+        return renderCustomBuilder();
+    }
+
+    if (currentView === 'library' || !story) {
+        return renderLibrary();
+    }
+
     const profile = getProfile(story);
     if (syncDerivedStats(state, profile)) saveState(state);
 
-    qs('#dd_story_title').textContent = story?.title || 'DayDreamer';
-    qs('#dd_story_class').textContent = story?.story_class || '世界引擎';
+    renderHeader(story?.title || 'DayDreamer', story?.story_class || '世界引擎', 'play');
 
     renderStats(profile, state);
     renderTabs(profile);
     renderContent(activeTab, state, story, profile);
-
-    if (!story) {
-        showSetup();
-    }
 }
 
 function renderShell(profile, state) {
@@ -891,39 +1015,7 @@ let renderSettings = function (story) {
 };
 
 function showSetup() {
-    const state = loadState();
-    qs('#dd_modal').hidden = false;
-    qs('#dd_modal').innerHTML = `
-        <div class="dd-dialog">
-            <button id="dd_close_setup" class="dd-dialog-close" title="关闭" aria-label="关闭">×</button>
-            <h2>创建角色</h2>
-            <p>选择故事后直接进入第一幕。</p>
-            <label>角色姓名</label>
-            <input id="dd_name" type="text" value="${escapeHtml(state.character?.name || '')}" placeholder="输入角色名">
-            <label>角色性别</label>
-            <div class="dd-segment">
-                <button class="dd-gender ${state.character?.gender !== '女' ? 'active' : ''}" data-gender="男">男</button>
-                <button class="dd-gender ${state.character?.gender === '女' ? 'active' : ''}" data-gender="女">女</button>
-            </div>
-            <div class="dd-entry-grid">
-                <button id="dd_random">随机故事</button>
-                <button id="dd_preset">预设故事</button>
-                <button id="dd_custom">自定义故事</button>
-            </div>
-            <div id="dd_picker"></div>
-        </div>
-    `;
-
-    qs('#dd_close_setup').addEventListener('click', hideSetup);
-    document.querySelectorAll('.dd-gender').forEach(button => {
-        button.addEventListener('click', () => {
-            document.querySelectorAll('.dd-gender').forEach(item => item.classList.remove('active'));
-            button.classList.add('active');
-        });
-    });
-    qs('#dd_random').addEventListener('click', () => startStory(stories[Math.floor(Math.random() * stories.length)]));
-    qs('#dd_preset').addEventListener('click', renderDimensionPicker);
-    qs('#dd_custom').addEventListener('click', renderCustomPicker);
+    showLibrary();
 }
 
 function hideSetup() {
@@ -933,98 +1025,346 @@ function hideSetup() {
 
 function getCharacterDraft() {
     return {
-        name: qs('#dd_name')?.value?.trim() || '',
+        name: qs('#dd_detail_name')?.value?.trim() || qs('#dd_name')?.value?.trim() || '',
         gender: document.querySelector('.dd-gender.active')?.dataset.gender || '男',
         custom: {},
     };
 }
 
-function renderDimensionPicker() {
-    qs('#dd_picker').innerHTML = `
-        <h3>按什么类型找故事？</h3>
-        <div class="dd-filter-grid">
-            ${FILTER_DIMENSIONS.map(dim => `<button class="dd-dim" data-dim="${dim.key}">${dim.label}</button>`).join('')}
-            <button id="dd_all">查看全部 ${stories.length} 个</button>
-        </div>
-    `;
-    document.querySelectorAll('.dd-dim').forEach(button => button.addEventListener('click', () => renderTypePicker(button.dataset.dim)));
-    qs('#dd_all').addEventListener('click', () => renderStoryPicker(stories, '全部故事'));
-}
-
-function renderTypePicker(dimension) {
-    const counts = new Map();
-    for (const story of stories) counts.set(story[dimension], (counts.get(story[dimension]) ?? 0) + 1);
-    qs('#dd_picker').innerHTML = `
-        <h3>${escapeHtml(FILTER_DIMENSIONS.find(item => item.key === dimension)?.label || dimension)}</h3>
-        <div class="dd-list">
-            ${[...counts.entries()].sort((a, b) => b[1] - a[1]).map(([value, count]) => `
-                <button class="dd-type" data-value="${escapeHtml(value)}"><span>${escapeHtml(value)}</span><b>${count}</b></button>
-            `).join('')}
-        </div>
-    `;
-    document.querySelectorAll('.dd-type').forEach(button => {
-        button.addEventListener('click', () => renderStoryPicker(stories.filter(story => story[dimension] === button.dataset.value), button.dataset.value));
+function getFilteredStories() {
+    return stories.filter(story => {
+        if (libraryFilters.spacetime && classifySpacetime(story) !== libraryFilters.spacetime) return false;
+        if (libraryFilters.theme && classifyTheme(story) !== libraryFilters.theme) return false;
+        return true;
     });
 }
 
-function renderStoryPicker(list, title) {
-    qs('#dd_picker').innerHTML = `
-        <h3>${escapeHtml(title)}（${list.length}）</h3>
-        <div class="dd-story-list">
-            ${list.map(story => `
-                <button class="dd-story-choice" data-story-id="${story.id}">
-                    <b>${story.id}. ${escapeHtml(story.title)}</b>
-                    <span>${escapeHtml(story.opening)}</span>
-                </button>
-            `).join('')}
-        </div>
+function getStoryCountForFilter(type, value) {
+    return stories.filter(story => {
+        const matchesOwn = type === 'spacetime' ? classifySpacetime(story) === value : classifyTheme(story) === value;
+        const matchesOther = type === 'spacetime'
+            ? !libraryFilters.theme || classifyTheme(story) === libraryFilters.theme
+            : !libraryFilters.spacetime || classifySpacetime(story) === libraryFilters.spacetime;
+        return matchesOwn && matchesOther;
+    }).length;
+}
+
+function renderCategoryNav(title, type, tags) {
+    const chips = tags.map(tag => {
+        const count = getStoryCountForFilter(type, tag);
+        return `
+            <button class="dd-filter-chip ${libraryFilters[type] === tag ? 'active' : ''}" data-filter-type="${type}" data-filter-value="${escapeHtml(tag)}" ${count ? '' : 'disabled'}>
+                <span>${escapeHtml(tag)}</span>
+                <b>${count}</b>
+            </button>
+        `;
+    }).join('');
+
+    return `
+        <section class="dd-category">
+            <div class="dd-section-title">
+                <h2>${escapeHtml(title)}</h2>
+                ${libraryFilters[type] ? `<button class="dd-filter-clear" data-clear-filter="${type}">清除</button>` : ''}
+            </div>
+            <div class="dd-chip-row" role="list">
+                ${chips}
+            </div>
+        </section>
     `;
-    document.querySelectorAll('.dd-story-choice[data-story-id]').forEach(button => {
-        button.addEventListener('click', () => startStory(stories.find(story => Number(story.id) === Number(button.dataset.storyId))));
+}
+
+function renderStoryCard(story, index) {
+    const tags = getStoryTags(story);
+    return `
+        <button class="dd-library-card" data-story-id="${story.id}" style="${getCoverStyle(story)}">
+            <span class="dd-card-cover" aria-hidden="true">
+                <span class="dd-cover-mark">${escapeHtml(String(story.title || 'D').slice(0, 2))}</span>
+                <span class="dd-cover-line"></span>
+                <span class="dd-cover-index">${String(index + 1).padStart(2, '0')}</span>
+            </span>
+            <span class="dd-library-title">${escapeHtml(story.title)}</span>
+            <span class="dd-library-tags">${renderTagPills(tags.slice(0, 3))}</span>
+            <span class="dd-library-opening">${escapeHtml(compactText(story.opening, 34))}</span>
+        </button>
+    `;
+}
+
+function renderLibrary() {
+    currentView = 'library';
+    selectedStoryDraft = null;
+    hideSetup();
+    renderHeader('故事库', '选择一个世界进入白日梦', 'preplay');
+
+    const list = getFilteredStories();
+    qs('#dd_content').innerHTML = `
+        <section class="dd-library">
+            <div class="dd-library-topline">
+                <span>${list.length} / ${stories.length} 个故事</span>
+                ${(libraryFilters.spacetime || libraryFilters.theme) ? '<button id="dd_clear_filters" class="dd-filter-clear">全部故事</button>' : ''}
+            </div>
+            ${renderCategoryNav('时空分类', 'spacetime', SPACETIME_TAGS)}
+            ${renderCategoryNav('主题分类', 'theme', THEME_TAGS)}
+            <section class="dd-story-grid" aria-label="故事库">
+                ${list.map((story, index) => renderStoryCard(story, index)).join('') || '<div class="dd-empty">这个组合暂时没有故事。</div>'}
+            </section>
+        </section>
+    `;
+
+    qs('#dd_clear_filters')?.addEventListener('click', () => {
+        libraryFilters = { spacetime: '', theme: '' };
+        renderLibrary();
+    });
+    document.querySelectorAll('[data-clear-filter]').forEach(button => {
+        button.addEventListener('click', () => {
+            libraryFilters[button.dataset.clearFilter] = '';
+            renderLibrary();
+        });
+    });
+    document.querySelectorAll('.dd-filter-chip').forEach(button => {
+        button.addEventListener('click', () => {
+            const type = button.dataset.filterType;
+            const value = button.dataset.filterValue;
+            libraryFilters[type] = libraryFilters[type] === value ? '' : value;
+            renderLibrary();
+        });
+    });
+    document.querySelectorAll('.dd-library-card').forEach(button => {
+        button.addEventListener('click', () => {
+            const story = stories.find(item => Number(item.id) === Number(button.dataset.storyId));
+            renderStoryDetail(story);
+        });
     });
 }
 
-function renderCustomPicker() {
-    qs('#dd_picker').innerHTML = `
-        <h3>自定义故事</h3>
-        <textarea id="dd_custom_text" rows="5" placeholder="一句话告诉我：你想进入什么世界、你是谁、你最想体验什么。"></textarea>
-        <button id="dd_start_custom" class="dd-primary" style="width:100%;margin-top:10px;">开始</button>
+function showLibrary() {
+    currentView = 'library';
+    renderLibrary();
+}
+
+function pickRandomStory() {
+    const pool = getFilteredStories();
+    return pool[Math.floor(Math.random() * pool.length)] ?? stories[Math.floor(Math.random() * stories.length)];
+}
+
+function showRandomStoryDetail() {
+    const story = pickRandomStory();
+    if (story) renderStoryDetail(story);
+}
+
+function getStoryInfoRows(story) {
+    return [
+        ['主角身份', story?.protagonist_setup || '由玩家昵称进入故事'],
+        ['世界机制', story?.system_type && story.system_type !== '无' ? story.system_type : 'DayDreamer 动态推演'],
+        ['开局事件', story?.opening || '由设定生成第一幕'],
+        ['叙事路线', getRouteLabel(story?.route || 'general_story')],
+    ];
+}
+
+function renderStoryDetail(story) {
+    if (!story) return renderLibrary();
+    currentView = 'detail';
+    selectedStoryDraft = story;
+    hideSetup();
+    renderHeader(story.title || '故事详情', story.story_class || '世界引擎', 'preplay');
+
+    const saved = loadState();
+    qs('#dd_content').innerHTML = `
+        <section class="dd-detail">
+            <button id="dd_back_library" class="dd-text-button">返回故事库</button>
+            <div class="dd-detail-cover" style="${getCoverStyle(story)}">
+                <div class="dd-cover-mark">${escapeHtml(String(story.title || 'D').slice(0, 2))}</div>
+                <div class="dd-detail-cover-copy">
+                    <span>${escapeHtml(classifySpacetime(story))}</span>
+                    <h2>${escapeHtml(story.title || '自定义故事')}</h2>
+                </div>
+            </div>
+            <div class="dd-detail-tags">${renderTagPills(getStoryTags(story))}</div>
+            <section class="dd-detail-section">
+                <h2>世界观</h2>
+                <div class="dd-screen">${formatText(getWorldview(story))}</div>
+            </section>
+            <section class="dd-info-grid">
+                ${getStoryInfoRows(story).map(([label, value]) => `
+                    <div class="dd-info-item">
+                        <span>${escapeHtml(label)}</span>
+                        <b>${escapeHtml(value)}</b>
+                    </div>
+                `).join('')}
+            </section>
+            <section class="dd-start-panel">
+                <label for="dd_detail_name">昵称</label>
+                <input id="dd_detail_name" type="text" value="${escapeHtml(saved.character?.name || '')}" placeholder="输入你在故事里的名字">
+                <button id="dd_start_detail" class="dd-primary">开始体验</button>
+            </section>
+        </section>
     `;
-    qs('#dd_start_custom').addEventListener('click', () => {
-        const text = qs('#dd_custom_text').value.trim();
+
+    qs('#dd_back_library')?.addEventListener('click', showLibrary);
+    qs('#dd_start_detail')?.addEventListener('click', () => startStory(story));
+    qs('#dd_detail_name')?.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            startStory(story);
+        }
+    });
+}
+
+function renderCustomBuilder() {
+    currentView = 'custom';
+    selectedStoryDraft = null;
+    hideSetup();
+    renderHeader('自定义游戏', '把一个设定变成可玩的世界', 'preplay');
+
+    qs('#dd_content').innerHTML = `
+        <section class="dd-custom-builder">
+            <button id="dd_back_library" class="dd-text-button">返回故事库</button>
+            <label for="dd_custom_text">设定</label>
+            <textarea id="dd_custom_text" rows="8" placeholder="例如：我在近未来医院后勤部，发现一批被篡改的急救物资流向记录。"></textarea>
+            <button id="dd_build_custom" class="dd-primary">生成详情页</button>
+            <div id="dd_custom_feedback" class="dd-custom-feedback" aria-live="polite"></div>
+        </section>
+    `;
+
+    qs('#dd_back_library')?.addEventListener('click', showLibrary);
+    qs('#dd_build_custom')?.addEventListener('click', () => {
+        const text = qs('#dd_custom_text')?.value?.trim();
         if (!text) return;
-        const state = createState();
-        state.story_title = '自定义故事';
-        state.custom_story = text;
-        state.story_class = '通用';
-        state.main_objective = text;
-        state.core_conflict = text;
-        state.active_hooks = [text];
-        state.character = getCharacterDraft();
-        saveState(state);
-        saveHistory([]);
-        hideSetup();
-        render();
-        sendAction(`开始自定义 DayDreamer 故事：${text}`);
+        createCustomStoryWithAi(text);
     });
+}
+
+function renderCustomCreationState(seedText, message = '虚拟世界正在创建') {
+    const feedback = qs('#dd_custom_feedback');
+    if (!feedback) return;
+
+    feedback.innerHTML = `
+        <div class="dd-creating-world">
+            <div class="dd-creating-orbit" aria-hidden="true"></div>
+            <div>
+                <b>${escapeHtml(message)}</b>
+                <span>${escapeHtml(compactText(seedText, 64))}</span>
+            </div>
+        </div>
+    `;
+}
+
+async function createCustomStoryWithAi(text) {
+    if (!provider.configured) {
+        qs('#dd_custom_feedback').innerHTML = `<div class="dd-error">服务器尚未配置 DayDreamer 模型，暂时不能创建自定义世界。</div>`;
+        return;
+    }
+
+    const requestId = ++customStoryRequestId;
+    const button = qs('#dd_build_custom');
+    const textarea = qs('#dd_custom_text');
+    const phases = [
+        '正在提炼时空、主题和主角处境',
+        '正在生成世界规则和开场事件',
+        '正在整理成 stories.json 格式',
+    ];
+    let phaseIndex = 0;
+
+    button.disabled = true;
+    textarea.disabled = true;
+    qs('#DayDreamer_public_app').classList.add('dd-loading');
+    renderCustomCreationState(text, phases[phaseIndex]);
+    const timer = setInterval(() => {
+        phaseIndex = Math.min(phaseIndex + 1, phases.length - 1);
+        renderCustomCreationState(text, phases[phaseIndex]);
+    }, 4200);
+
+    try {
+        const response = await fetch('/api/DayDreamer/custom-story', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+            },
+            body: JSON.stringify({ text }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.error || '虚拟世界创建失败。');
+        }
+
+        if (requestId !== customStoryRequestId || currentView !== 'custom') {
+            return;
+        }
+
+        renderStoryDetail({
+            ...createCustomStoryDraft(text),
+            ...(data.story ?? {}),
+            is_custom: true,
+        });
+    } catch (error) {
+        const feedback = qs('#dd_custom_feedback');
+        if (feedback) {
+            feedback.innerHTML = `<div class="dd-error">${escapeHtml(error.message || '虚拟世界创建失败，请稍后再试。')}</div>`;
+        }
+    } finally {
+        clearInterval(timer);
+        button.disabled = false;
+        textarea.disabled = false;
+        qs('#DayDreamer_public_app').classList.remove('dd-loading');
+    }
+}
+
+function createCustomStoryDraft(text) {
+    const titleSeed = text.split(/[，。,.；;\n]/).find(Boolean)?.trim() || '自定义故事';
+    const title = titleSeed.length > 12 ? `${titleSeed.slice(0, 12)}...` : titleSeed;
+    return {
+        id: null,
+        is_custom: true,
+        title,
+        spacetime: '用户自定义时空',
+        theme: text,
+        protagonist_setup: '由玩家昵称定义的入局者',
+        system_type: 'DayDreamer 世界引擎',
+        custom_constraints: ['遵循用户自定义设定', '行动必须经过世界规则校验', '每一幕都保留可选择的分支'],
+        meta_theme: classifyTheme({ theme: text }),
+        story_class: '通用',
+        style: '细腻沉浸',
+        route: 'general_story',
+        opening: text,
+    };
 }
 
 function startStory(story) {
     if (!story) return;
     const state = createState();
-    state.story_id = story.id;
-    state.story_title = story.title;
-    state.route = story.route;
-    state.story_class = story.story_class;
+    const character = getCharacterDraft();
+    if (story.is_custom) {
+        state.story_title = story.title || '自定义故事';
+        state.custom_story = story.opening || story.theme || '';
+        state.custom_story_data = {
+            ...story,
+            id: null,
+            is_custom: true,
+        };
+    } else {
+        state.story_id = story.id;
+        state.story_title = story.title;
+    }
+    state.route = story.route || 'general_story';
+    state.story_class = story.story_class || '通用';
     state.main_objective = story.opening;
     state.core_conflict = story.theme;
-    state.active_hooks = [story.opening];
-    state.character = getCharacterDraft();
+    state.active_hooks = [story.opening].filter(Boolean);
+    state.character = character;
     saveState(state);
     saveHistory([]);
     hideSetup();
+    currentView = null;
+    selectedStoryDraft = null;
+    activeTab = 'story';
     render();
-    sendAction(`开始 DayDreamer 预设故事《${story.title}》。角色姓名：${state.character.name || '未命名'}。角色性别：${state.character.gender}。请根据当前剧本生成第一幕，直接进入事件现场。`);
+
+    const name = state.character.name || '未命名';
+    if (story.is_custom) {
+        sendAction(`开始自定义 DayDreamer 故事：${story.opening}。角色昵称：${name}。请根据这个设定生成第一幕，直接进入事件现场。`);
+    } else {
+        sendAction(`开始 DayDreamer 预设故事《${story.title}》。角色昵称：${name}。请根据当前剧本生成第一幕，直接进入事件现场。`);
+    }
 }
 
 function getSection(text, label) {
@@ -1580,6 +1920,8 @@ sendAction = async function (text) {
     }
 };
 
+qs('#dd_quick_random').addEventListener('click', showRandomStoryDetail);
+qs('#dd_quick_custom').addEventListener('click', renderCustomBuilder);
 qs('#dd_open_setup').addEventListener('click', showSetup);
 qs('#dd_send_action').addEventListener('click', () => selectAction(qs('#dd_custom_action').value));
 qs('#dd_custom_action').addEventListener('keydown', event => {
