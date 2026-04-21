@@ -2,6 +2,7 @@ import EventSourceStream from './sse-core-stream.js';
 
 const STORAGE_KEY = 'daydream_public_state_v1';
 const HISTORY_KEY = 'daydream_public_history_v1';
+const MAX_VISIBLE_HISTORY = 0;
 
 const FILTER_DIMENSIONS = [
     { key: 'spacetime', label: '时空背景' },
@@ -60,13 +61,10 @@ const statLabels = {
 let stories = [];
 let uiProfiles = {};
 let provider = {};
-let sillyTavern = { available: false, characters: [], world_names: [] };
 let csrfToken = '';
 let activeTab = 'story';
 let isGenerating = false;
 let pendingAction = '';
-const stCharacterChats = new Map();
-const stCharacterChatsLoading = new Set();
 
 function qs(selector) {
     return document.querySelector(selector);
@@ -113,6 +111,7 @@ function createState() {
         character: { name: '', gender: '男', custom: {} },
         stats: { ...defaultStats },
         relationships: [],
+        world_entries: [],
         resources: [],
         triggered_events: [],
         current_stage: 'opening',
@@ -135,9 +134,11 @@ function loadState() {
         return {
             ...createState(),
             ...(saved ?? {}),
-            st_context: { ...createDefaultStContext(), ...(saved?.st_context ?? {}) },
+            st_context: createDefaultStContext(),
             stats: { ...defaultStats, ...(saved?.stats ?? {}) },
             character: { name: '', gender: '男', custom: {}, ...(saved?.character ?? {}) },
+            relationships: toRecordList(saved?.relationships),
+            world_entries: normalizeWorldEntries(saved?.world_entries),
         };
     } catch {
         return createState();
@@ -148,16 +149,13 @@ function saveState(state) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function loadHistory() {
-    try {
-        return JSON.parse(localStorage.getItem(HISTORY_KEY)) ?? [];
-    } catch {
-        return [];
-    }
-}
-
 function saveHistory(history) {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-12)));
+    if (MAX_VISIBLE_HISTORY <= 0) {
+        localStorage.removeItem(HISTORY_KEY);
+        return;
+    }
+
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-MAX_VISIBLE_HISTORY)));
 }
 
 async function fetchSession(sessionId) {
@@ -196,11 +194,7 @@ async function restoreSessionFromServer() {
         ...createState(),
         ...(session.state ?? {}),
         session_id: session.session_id ?? state.session_id,
-        st_context: {
-            ...createDefaultStContext(),
-            ...(session.st_context ?? {}),
-            ...(state.st_context ?? {}),
-        },
+        st_context: createDefaultStContext(),
         stats: {
             ...defaultStats,
             ...(session.state?.stats ?? {}),
@@ -211,15 +205,15 @@ async function restoreSessionFromServer() {
             custom: {},
             ...(session.state?.character ?? {}),
         },
+        relationships: normalizePeople(session.state?.relationships),
+        world_entries: normalizeWorldEntries(session.state?.world_entries),
     };
 
     saveState(restoredState);
-    if (Array.isArray(session.history)) {
-        saveHistory(session.history);
-    }
+    saveHistory([]);
 }
 
-async function syncSession(state, history = loadHistory()) {
+async function syncSession(state, history = []) {
     if (!state?.session_id || !csrfToken) {
         return null;
     }
@@ -232,9 +226,9 @@ async function syncSession(state, history = loadHistory()) {
         },
         body: JSON.stringify({
             session_id: state.session_id,
-            st_context: state.st_context ?? {},
+            st_context: createDefaultStContext(),
             state,
-            history,
+            history: [],
         }),
     }).catch(() => null);
 
@@ -243,34 +237,6 @@ async function syncSession(state, history = loadHistory()) {
     }
 
     return await response.json().catch(() => null);
-}
-
-async function loadCharacterChats(avatarUrl) {
-    if (!avatarUrl || stCharacterChats.has(avatarUrl) || stCharacterChatsLoading.has(avatarUrl)) {
-        return stCharacterChats.get(avatarUrl) ?? [];
-    }
-
-    stCharacterChatsLoading.add(avatarUrl);
-
-    try {
-        const response = await fetch('/api/daydream/st/chats', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken,
-            },
-            body: JSON.stringify({ avatar_url: avatarUrl }),
-        });
-
-        const chats = response.ok ? await response.json() : [];
-        stCharacterChats.set(avatarUrl, Array.isArray(chats) ? chats : []);
-        return stCharacterChats.get(avatarUrl) ?? [];
-    } catch {
-        stCharacterChats.set(avatarUrl, []);
-        return [];
-    } finally {
-        stCharacterChatsLoading.delete(avatarUrl);
-    }
 }
 
 function getStory(state = loadState()) {
@@ -361,7 +327,7 @@ function renderStats(profile, state) {
 }
 
 function renderTabs(profile) {
-    const tabs = profile.tabs ?? [];
+    const tabs = getProductTabs(profile);
     if (!tabs.some(tab => tab.key === activeTab)) {
         activeTab = 'story';
     }
@@ -381,7 +347,41 @@ function renderTabs(profile) {
 }
 
 function getTabLabel(profile, key, fallback) {
-    return profile.tabs?.find(tab => tab.key === key)?.label ?? fallback;
+    return getProductTabs(profile).find(tab => tab.key === key)?.label ?? fallback;
+}
+
+function getPersonMetricLabel(profile, story) {
+    const statKeys = new Set((profile?.top_stats ?? []).map(stat => stat.key));
+    const storyClass = story?.story_class || '';
+
+    if (statKeys.has('affection')) return statKeys.has('tension') ? '好感 / 拉扯' : '好感';
+    if (statKeys.has('trust_level')) return '信任 / 立场';
+    if (statKeys.has('leverage')) return '筹码 / 立场';
+    if (statKeys.has('prestige')) return '声望 / 阵营';
+    if (statKeys.has('clues')) return '嫌疑 / 可信度';
+    if (statKeys.has('supplies')) return '协作 / 可靠度';
+    if (statKeys.has('cashflow')) return '合作 / 价值';
+    if (/权谋|打脸|经营/.test(storyClass)) return '立场 / 价值';
+    if (/危机|求生/.test(storyClass)) return '信任 / 协作';
+    if (/悬疑/.test(storyClass)) return '嫌疑 / 可信度';
+
+    return '关系指标';
+}
+
+function getProductTabs(profile) {
+    const tabs = [...(profile?.tabs ?? [])];
+    const hasWorldBook = tabs.some(tab => tab.key === 'world');
+    if (!hasWorldBook) {
+        const settingsIndex = tabs.findIndex(tab => tab.key === 'settings');
+        const worldTab = { key: 'world', label: '世界书', icon: 'book' };
+        if (settingsIndex >= 0) {
+            tabs.splice(settingsIndex, 0, worldTab);
+        } else {
+            tabs.push(worldTab);
+        }
+    }
+
+    return tabs;
 }
 
 let renderContent = function (tab, state, story, profile) {
@@ -568,6 +568,101 @@ function formatItemDetail(item) {
         .join('；');
 }
 
+function createClientId(prefix = 'dd') {
+    return globalThis.crypto?.randomUUID?.() ?? `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function normalizePersonRecord(item, index = 0) {
+    if (typeof item === 'string') {
+        const name = item.trim();
+        return name ? { id: createClientId('person'), name, note: '', source: 'generated' } : null;
+    }
+
+    if (!item || typeof item !== 'object') {
+        return null;
+    }
+
+    const name = String(item.name || item.title || item.label || item.character || item.person || '').trim();
+    const note = String(item.note || item.detail || item.description || item.summary || item.content || '').trim();
+    const relation = String(item.relation || item.status || item.role || '').trim();
+    const affinity = item.affinity ?? item.value ?? item.trust ?? '';
+    const id = String(item.id || item.uid || name || `person-${index}`).trim();
+
+    if (!name && !note && !relation) {
+        return null;
+    }
+
+    return {
+        ...item,
+        id: id || createClientId('person'),
+        name: name || '未命名人物',
+        relation,
+        affinity,
+        note,
+    };
+}
+
+function normalizePeople(records) {
+    return toRecordList(records).map(normalizePersonRecord).filter(Boolean);
+}
+
+function normalizeWorldEntry(item, index = 0) {
+    if (typeof item === 'string') {
+        const content = item.trim();
+        return content ? {
+            id: createClientId('world'),
+            title: content.slice(0, 18),
+            keys: [],
+            content,
+            enabled: true,
+            source: 'generated',
+        } : null;
+    }
+
+    if (!item || typeof item !== 'object') {
+        return null;
+    }
+
+    const title = String(item.title || item.name || item.comment || item.key || '').trim();
+    const content = String(item.content || item.detail || item.description || item.summary || '').trim();
+    const rawKeys = item.keys ?? item.key ?? item.keywords ?? [];
+    const keys = Array.isArray(rawKeys)
+        ? rawKeys.map(key => String(key).trim()).filter(Boolean)
+        : String(rawKeys).split(/[,，、]/).map(key => key.trim()).filter(Boolean);
+
+    if (!title && !content && keys.length === 0) {
+        return null;
+    }
+
+    return {
+        ...item,
+        id: String(item.id || item.uid || title || `world-${index}`).trim() || createClientId('world'),
+        title: title || keys[0] || '未命名设定',
+        keys,
+        content,
+        enabled: item.enabled !== false,
+    };
+}
+
+function normalizeWorldEntries(records) {
+    return toRecordList(records).map(normalizeWorldEntry).filter(Boolean);
+}
+
+function recordMergeKey(item) {
+    return String(item?.id || item?.name || item?.title || item?.content || JSON.stringify(item)).toLowerCase();
+}
+
+function mergeNormalizedRecords(current, incoming, normalizer, limit = 40) {
+    const merged = [...normalizer(incoming), ...normalizer(current)];
+    const seen = new Set();
+    return merged.filter(item => {
+        const key = recordMergeKey(item);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    }).slice(0, limit);
+}
+
 function renderList(title, list, emptyText) {
     qs('#dd_content').innerHTML = `
         <section class="dd-card">
@@ -576,6 +671,202 @@ function renderList(title, list, emptyText) {
         </section>
     `;
 }
+
+function renderPeoplePanel(state, profile) {
+    const title = getTabLabel(profile, 'relations', '人物');
+    const story = getStory(state);
+    const metricLabel = getPersonMetricLabel(profile, story);
+    const people = normalizePeople(state.relationships);
+    qs('#dd_content').innerHTML = `
+        <section class="dd-card">
+            <div class="dd-panel-title">
+                <h2>${escapeHtml(title)}</h2>
+                <button id="dd_add_person" class="dd-small-action" title="添加人物">添加</button>
+            </div>
+            <div class="dd-protagonist">
+                <b>${escapeHtml(state.character?.name || '未命名主角')}</b>
+                <span>${escapeHtml(state.character?.gender || '未设定')} · 主角</span>
+            </div>
+            ${people.length ? `<div class="dd-list">${people.map((person, index) => `
+                <article class="dd-editable-row">
+                    <div>
+                        <b>${escapeHtml(person.name)}</b>
+                        <span>${escapeHtml([person.relation, person.affinity !== '' ? `${metricLabel} ${person.affinity}` : '', person.note].filter(Boolean).join(' · ') || '人物档案')}</span>
+                    </div>
+                    <div class="dd-row-actions">
+                        <button data-edit-person="${index}" title="编辑人物">编辑</button>
+                        <button data-delete-person="${index}" title="删除人物">删除</button>
+                    </div>
+                </article>
+            `).join('')}</div>` : '<div class="dd-empty">暂无人物档案。可以手动添加，也可以让剧情生成。</div>'}
+        </section>
+    `;
+
+    qs('#dd_add_person')?.addEventListener('click', () => showPersonEditor());
+    document.querySelectorAll('[data-edit-person]').forEach(button => {
+        button.addEventListener('click', () => showPersonEditor(Number(button.dataset.editPerson)));
+    });
+    document.querySelectorAll('[data-delete-person]').forEach(button => {
+        button.addEventListener('click', async () => {
+            const nextState = loadState();
+            const list = normalizePeople(nextState.relationships);
+            list.splice(Number(button.dataset.deletePerson), 1);
+            nextState.relationships = list;
+            saveState(nextState);
+            await syncSession(nextState);
+            render();
+        });
+    });
+}
+
+function showPersonEditor(index = -1) {
+    const state = loadState();
+    const story = getStory(state);
+    const profile = getProfile(story);
+    const metricLabel = getPersonMetricLabel(profile, story);
+    const people = normalizePeople(state.relationships);
+    const person = index >= 0 ? people[index] : {};
+
+    qs('#dd_modal').hidden = false;
+    qs('#dd_modal').innerHTML = `
+        <div class="dd-dialog">
+            <button id="dd_close_person" class="dd-dialog-close" title="关闭" aria-label="关闭">×</button>
+            <h2>${index >= 0 ? '编辑人物' : '添加人物'}</h2>
+            <label for="dd_person_name">姓名</label>
+            <input id="dd_person_name" type="text" value="${escapeHtml(person.name || '')}" placeholder="人物姓名">
+            <label for="dd_person_relation">关系 / 立场</label>
+            <input id="dd_person_relation" type="text" value="${escapeHtml(person.relation || '')}" placeholder="盟友、对手、家人、雇主...">
+            <label for="dd_person_affinity">${escapeHtml(metricLabel)}</label>
+            <input id="dd_person_affinity" type="text" value="${escapeHtml(person.affinity ?? '')}" placeholder="可填数字或简短描述">
+            <label for="dd_person_note">备注</label>
+            <textarea id="dd_person_note" rows="5" placeholder="人物背景、最近互动、隐藏动机">${escapeHtml(person.note || '')}</textarea>
+            <button id="dd_save_person" class="dd-primary" style="width:100%;margin-top:14px;">保存</button>
+        </div>
+    `;
+
+    qs('#dd_close_person')?.addEventListener('click', hideSetup);
+    qs('#dd_save_person')?.addEventListener('click', async () => {
+        const nextState = loadState();
+        const list = normalizePeople(nextState.relationships);
+        const draft = normalizePersonRecord({
+            ...(person ?? {}),
+            id: person?.id || createClientId('person'),
+            name: qs('#dd_person_name')?.value?.trim() || '未命名人物',
+            relation: qs('#dd_person_relation')?.value?.trim() || '',
+            affinity: qs('#dd_person_affinity')?.value?.trim() || '',
+            note: qs('#dd_person_note')?.value?.trim() || '',
+            source: 'user',
+        });
+        if (index >= 0) list[index] = draft;
+        else list.unshift(draft);
+        nextState.relationships = list.filter(Boolean);
+        saveState(nextState);
+        await syncSession(nextState);
+        hideSetup();
+        render();
+    });
+}
+
+function renderWorldBookPanel(state) {
+    const entries = normalizeWorldEntries(state.world_entries);
+    qs('#dd_content').innerHTML = `
+        <section class="dd-card">
+            <div class="dd-panel-title">
+                <h2>世界书</h2>
+                <button id="dd_add_world_entry" class="dd-small-action" title="添加世界书">添加</button>
+            </div>
+            ${entries.length ? `<div class="dd-list">${entries.map((entry, index) => `
+                <article class="dd-editable-row ${entry.enabled ? '' : 'disabled'}">
+                    <div>
+                        <b>${escapeHtml(entry.title)}</b>
+                        <span>${escapeHtml([entry.keys?.length ? `关键词：${entry.keys.join('、')}` : '', entry.content].filter(Boolean).join(' · ') || '空条目')}</span>
+                    </div>
+                    <div class="dd-row-actions">
+                        <button data-toggle-world="${index}" title="${entry.enabled ? '停用' : '启用'}">${entry.enabled ? '停用' : '启用'}</button>
+                        <button data-edit-world="${index}" title="编辑世界书">编辑</button>
+                        <button data-delete-world="${index}" title="删除世界书">删除</button>
+                    </div>
+                </article>
+            `).join('')}</div>` : '<div class="dd-empty">暂无世界书条目。剧情可以自动生成，你也可以手动添加。</div>'}
+        </section>
+    `;
+
+    qs('#dd_add_world_entry')?.addEventListener('click', () => showWorldEntryEditor());
+    document.querySelectorAll('[data-edit-world]').forEach(button => {
+        button.addEventListener('click', () => showWorldEntryEditor(Number(button.dataset.editWorld)));
+    });
+    document.querySelectorAll('[data-toggle-world]').forEach(button => {
+        button.addEventListener('click', async () => {
+            const nextState = loadState();
+            const list = normalizeWorldEntries(nextState.world_entries);
+            const entry = list[Number(button.dataset.toggleWorld)];
+            if (entry) entry.enabled = !entry.enabled;
+            nextState.world_entries = list;
+            saveState(nextState);
+            await syncSession(nextState);
+            render();
+        });
+    });
+    document.querySelectorAll('[data-delete-world]').forEach(button => {
+        button.addEventListener('click', async () => {
+            const nextState = loadState();
+            const list = normalizeWorldEntries(nextState.world_entries);
+            list.splice(Number(button.dataset.deleteWorld), 1);
+            nextState.world_entries = list;
+            saveState(nextState);
+            await syncSession(nextState);
+            render();
+        });
+    });
+}
+
+function showWorldEntryEditor(index = -1) {
+    const state = loadState();
+    const entries = normalizeWorldEntries(state.world_entries);
+    const entry = index >= 0 ? entries[index] : {};
+
+    qs('#dd_modal').hidden = false;
+    qs('#dd_modal').innerHTML = `
+        <div class="dd-dialog">
+            <button id="dd_close_world" class="dd-dialog-close" title="关闭" aria-label="关闭">×</button>
+            <h2>${index >= 0 ? '编辑世界书' : '添加世界书'}</h2>
+            <label for="dd_world_title">标题</label>
+            <input id="dd_world_title" type="text" value="${escapeHtml(entry.title || '')}" placeholder="地点、规则、组织、物品...">
+            <label for="dd_world_keys">关键词</label>
+            <input id="dd_world_keys" type="text" value="${escapeHtml((entry.keys ?? []).join('、'))}" placeholder="用顿号或逗号分隔">
+            <label for="dd_world_content">内容</label>
+            <textarea id="dd_world_content" rows="7" placeholder="这条设定在剧情中代表什么">${escapeHtml(entry.content || '')}</textarea>
+            <label class="dd-checkbox-line">
+                <input id="dd_world_enabled" type="checkbox" ${entry.enabled === false ? '' : 'checked'}>
+                <span>生成时启用</span>
+            </label>
+            <button id="dd_save_world" class="dd-primary" style="width:100%;margin-top:14px;">保存</button>
+        </div>
+    `;
+
+    qs('#dd_close_world')?.addEventListener('click', hideSetup);
+    qs('#dd_save_world')?.addEventListener('click', async () => {
+        const nextState = loadState();
+        const list = normalizeWorldEntries(nextState.world_entries);
+        const draft = normalizeWorldEntry({
+            ...(entry ?? {}),
+            id: entry?.id || createClientId('world'),
+            title: qs('#dd_world_title')?.value?.trim() || '未命名设定',
+            keys: qs('#dd_world_keys')?.value?.split(/[,，、]/).map(key => key.trim()).filter(Boolean) ?? [],
+            content: qs('#dd_world_content')?.value?.trim() || '',
+            enabled: Boolean(qs('#dd_world_enabled')?.checked),
+            source: 'user',
+        });
+        if (index >= 0) list[index] = draft;
+        else list.unshift(draft);
+        nextState.world_entries = list.filter(Boolean);
+        saveState(nextState);
+        await syncSession(nextState);
+        hideSetup();
+        render();
+    });
+}
+
 
 let renderSettings = function (story) {
     qs('#dd_content').innerHTML = `
@@ -877,8 +1168,10 @@ function applyStatsObject(state, stats, mode) {
 }
 
 function toRecordList(value) {
-    if (!Array.isArray(value)) return [];
-    return value
+    const list = Array.isArray(value)
+        ? value
+        : (value && typeof value === 'object' ? [value] : (typeof value === 'string' ? [value] : []));
+    return list
         .map(item => {
             if (typeof item === 'string') return item.trim();
             if (item && typeof item === 'object') return item;
@@ -929,7 +1222,13 @@ function applyMetaUpdates(state, meta, profile) {
         }
     }
 
-    state.relationships = prependRecords(state.relationships, meta.relationships);
+    state.relationships = mergeNormalizedRecords(state.relationships, meta.relationships, normalizePeople, 40);
+    state.world_entries = mergeNormalizedRecords(
+        state.world_entries,
+        meta.world_entries ?? meta.world_info ?? meta.lorebook_entries,
+        normalizeWorldEntries,
+        60,
+    );
     state.resources = prependRecords(state.resources, meta.resources);
     state.triggered_events = prependRecords(state.triggered_events, meta.events);
     state.active_hooks = prependRecords(state.active_hooks, meta.active_hooks);
@@ -1040,7 +1339,6 @@ let sendAction = async function (text) {
 
     let completed = false;
     try {
-        const history = loadHistory();
         const response = await fetch('/api/daydream/generate', {
             method: 'POST',
             headers: {
@@ -1050,11 +1348,11 @@ let sendAction = async function (text) {
             },
             body: JSON.stringify({
                 session_id: state.session_id,
-                st_context: state.st_context ?? {},
+                st_context: createDefaultStContext(),
                 story,
                 state,
                 message,
-                history,
+                history: [],
             }),
         });
         if (!response.ok) {
@@ -1065,16 +1363,6 @@ let sendAction = async function (text) {
         const sessionId = response.headers.get('x-daydream-session-id');
         if (sessionId) {
             state.session_id = sessionId;
-        }
-        const avatarUrl = response.headers.get('x-daydream-avatar-url');
-        const chatName = response.headers.get('x-daydream-chat-name');
-        if (avatarUrl || chatName) {
-            state.st_context = {
-                ...createDefaultStContext(),
-                ...(state.st_context ?? {}),
-                ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
-                ...(chatName ? { chat_name: chatName } : {}),
-            };
         }
         let lastPaint = 0;
         const data = await readDayDreamStream(response, (streamText) => {
@@ -1102,10 +1390,10 @@ let sendAction = async function (text) {
             syncDerivedStats(state, profile);
         }
 
-        const nextHistory = [...history, { role: 'user', content: message }, { role: 'assistant', content: stripDayDreamMeta(data.text) || scene.plot }];
-        saveHistory(nextHistory);
+        state.st_context = createDefaultStContext();
+        saveHistory([]);
         saveState(state);
-        await syncSession(state, nextHistory).catch(() => null);
+        await syncSession(state, []).catch(() => null);
         if (activeTab === 'story') render();
         else renderShell(profile, state);
         completed = true;
@@ -1148,100 +1436,32 @@ bootstrap = async function () {
     stories = boot.stories ?? [];
     uiProfiles = boot.uiProfiles ?? {};
     provider = boot.provider ?? {};
-    sillyTavern = boot.sillyTavern ?? { available: false, characters: [], world_names: [] };
     csrfToken = csrf.token ?? '';
 
     await restoreSessionFromServer();
-
-    const restoredState = loadState();
-    if (restoredState.st_context?.avatar_url) {
-        await loadCharacterChats(restoredState.st_context.avatar_url);
-    }
 };
 
 renderContent = function (tab, state, story, profile) {
     if (tab === 'story') return renderStory(state, story);
-    if (tab === 'stats') return renderStatsPanel(state, profile, getTabLabel(profile, 'stats', 'Stats'));
-    if (tab === 'relations') return renderList(getTabLabel(profile, 'relations', 'Relations'), getTabListItems('relations', state, profile), 'No relation updates yet.');
-    if (tab === 'messages') return renderList(getTabLabel(profile, 'messages', 'Messages'), getTabListItems('messages', state, profile), 'No clues or messages yet.');
-    if (tab === 'events') return renderList(getTabLabel(profile, 'events', 'Events'), getTabListItems('events', state, profile), 'No events recorded yet.');
-    if (tab === 'inventory') return renderList(getTabLabel(profile, 'inventory', 'Inventory'), getTabListItems('inventory', state, profile), 'No resources recorded yet.');
+    if (tab === 'stats') return renderStatsPanel(state, profile, getTabLabel(profile, 'stats', '状态'));
+    if (tab === 'relations') return renderPeoplePanel(state, profile);
+    if (tab === 'messages') return renderList(getTabLabel(profile, 'messages', '线索'), getTabListItems('messages', state, profile), '暂无线索或消息。');
+    if (tab === 'events') return renderList(getTabLabel(profile, 'events', '事件'), getTabListItems('events', state, profile), '暂无事件记录。');
+    if (tab === 'inventory') return renderList(getTabLabel(profile, 'inventory', '资源'), getTabListItems('inventory', state, profile), '暂无资源记录。');
+    if (tab === 'world') return renderWorldBookPanel(state);
     return renderSettings(state, story);
 };
 
 renderSettings = function (state, story) {
-    const stContext = { ...createDefaultStContext(), ...(state.st_context ?? {}) };
-    const avatarUrl = stContext.avatar_url || '';
-    const chats = avatarUrl ? (stCharacterChats.get(avatarUrl) ?? []) : [];
-    const isLoadingChats = avatarUrl && stCharacterChatsLoading.has(avatarUrl);
-    const selectedWorlds = new Set(Array.isArray(stContext.world_info_names) ? stContext.world_info_names : []);
-
-    if (avatarUrl && !stCharacterChats.has(avatarUrl) && !stCharacterChatsLoading.has(avatarUrl)) {
-        loadCharacterChats(avatarUrl).then(() => render()).catch(() => null);
-    }
-
     qs('#dd_content').innerHTML = `
         <section class="dd-card">
-            <h2>Settings</h2>
+            <h2>设置</h2>
             <div class="dd-list">
-                <button id="dd_reset_story" class="dd-story-choice">Choose another story</button>
-                <button id="dd_end_story" class="dd-story-choice">Generate ending</button>
-                <button id="dd_clear_local" class="dd-story-choice">Clear local state</button>
+                <button id="dd_reset_story" class="dd-story-choice">重新选择故事</button>
+                <button id="dd_end_story" class="dd-story-choice">生成结局</button>
+                <button id="dd_clear_local" class="dd-story-choice">清空本地状态</button>
             </div>
-            ${provider.configured ? '' : '<div class="dd-error" style="margin-top:12px;">No DayDream model is available yet.</div>'}
-            <div class="dd-empty" style="margin-top:12px;">${escapeHtml(story?.title || 'No active story')}</div>
-        </section>
-        <section class="dd-card" style="margin-top:14px;">
-            <h2>SillyTavern Backend</h2>
-            ${sillyTavern.available ? `
-                <div class="dd-settings-form">
-                    <label for="dd_st_character">Character card</label>
-                    <select id="dd_st_character">
-                        <option value="">None</option>
-                        ${(sillyTavern.characters ?? []).map(character => `
-                            <option value="${escapeHtml(character.avatar_url)}" ${character.avatar_url === avatarUrl ? 'selected' : ''}>
-                                ${escapeHtml(character.name)}
-                            </option>
-                        `).join('')}
-                    </select>
-
-                    <label for="dd_st_chat">Chat history</label>
-                    <select id="dd_st_chat" ${avatarUrl ? '' : 'disabled'}>
-                        <option value="">${isLoadingChats ? 'Loading chats...' : 'Create or use current DayDream chat'}</option>
-                        ${chats.map(chat => `
-                            <option value="${escapeHtml(chat.file_id || chat.file_name || '')}" ${(chat.file_id || chat.file_name || '') === stContext.chat_name ? 'selected' : ''}>
-                                ${escapeHtml(chat.file_id || chat.file_name || '')}
-                            </option>
-                        `).join('')}
-                    </select>
-
-                    <label for="dd_st_worlds">World Info</label>
-                    <select id="dd_st_worlds" multiple size="${Math.min(Math.max((sillyTavern.world_names ?? []).length, 3), 8)}">
-                        ${(sillyTavern.world_names ?? []).map(worldName => `
-                            <option value="${escapeHtml(worldName)}" ${selectedWorlds.has(worldName) ? 'selected' : ''}>
-                                ${escapeHtml(worldName)}
-                            </option>
-                        `).join('')}
-                    </select>
-
-                    <label for="dd_st_system_prompt">System prompt override</label>
-                    <textarea id="dd_st_system_prompt" rows="4" placeholder="Optional">${escapeHtml(stContext.system_prompt || '')}</textarea>
-
-                    <label for="dd_st_author_note">Author's Note override</label>
-                    <textarea id="dd_st_author_note" rows="4" placeholder="Optional">${escapeHtml(stContext.author_note || '')}</textarea>
-
-                    <div class="dd-settings-actions">
-                        <button id="dd_save_st_bindings" class="dd-primary">Save ST bindings</button>
-                        <button id="dd_clear_st_bindings">Clear ST bindings</button>
-                    </div>
-
-                    <div class="dd-hint">
-                        DayDream keeps the frontend. SillyTavern handles character card, chat history, world info, system prompt, and note injection behind the scenes.
-                    </div>
-                </div>
-            ` : `
-                <div class="dd-empty">Log in to use SillyTavern-backed character cards, chat history, and world info from DayDream.</div>
-            `}
+            <div class="dd-empty" style="margin-top:12px;">${escapeHtml(story?.title || '当前没有进行中的故事')}</div>
         </section>
     `;
 
@@ -1250,49 +1470,6 @@ renderSettings = function (state, story) {
     qs('#dd_clear_local').addEventListener('click', () => {
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(HISTORY_KEY);
-        render();
-    });
-
-    if (!sillyTavern.available) {
-        return;
-    }
-
-    qs('#dd_st_character')?.addEventListener('change', async (event) => {
-        const nextState = loadState();
-        nextState.st_context = {
-            ...createDefaultStContext(),
-            ...(nextState.st_context ?? {}),
-            avatar_url: event.target.value || '',
-            chat_name: '',
-        };
-        saveState(nextState);
-        if (event.target.value) {
-            await loadCharacterChats(event.target.value);
-        }
-        render();
-    });
-
-    qs('#dd_save_st_bindings')?.addEventListener('click', async () => {
-        const nextState = loadState();
-        nextState.st_context = {
-            ...createDefaultStContext(),
-            ...(nextState.st_context ?? {}),
-            avatar_url: qs('#dd_st_character')?.value || '',
-            chat_name: qs('#dd_st_chat')?.value || '',
-            world_info_names: Array.from(qs('#dd_st_worlds')?.selectedOptions ?? []).map(option => option.value).filter(Boolean),
-            system_prompt: qs('#dd_st_system_prompt')?.value?.trim() || '',
-            author_note: qs('#dd_st_author_note')?.value?.trim() || '',
-        };
-        saveState(nextState);
-        await syncSession(nextState);
-        render();
-    });
-
-    qs('#dd_clear_st_bindings')?.addEventListener('click', async () => {
-        const nextState = loadState();
-        nextState.st_context = createDefaultStContext();
-        saveState(nextState);
-        await syncSession(nextState);
         render();
     });
 };
@@ -1329,7 +1506,6 @@ sendAction = async function (text) {
 
     let completed = false;
     try {
-        const history = loadHistory();
         const response = await fetch('/api/daydream/generate', {
             method: 'POST',
             headers: {
@@ -1339,11 +1515,11 @@ sendAction = async function (text) {
             },
             body: JSON.stringify({
                 session_id: state.session_id,
-                st_context: state.st_context ?? {},
+                st_context: createDefaultStContext(),
                 story,
                 state,
                 message,
-                history,
+                history: [],
             }),
         });
         if (!response.ok) {
@@ -1382,24 +1558,10 @@ sendAction = async function (text) {
             syncDerivedStats(state, profile);
         }
 
-        const nextHistory = [...history, { role: 'user', content: message }, { role: 'assistant', content: stripDayDreamMeta(data.text) || scene.plot }];
-        saveHistory(nextHistory);
-
-        const remoteSession = state.session_id ? await fetchSession(state.session_id) : null;
-        if (remoteSession?.st_context) {
-            state.st_context = {
-                ...createDefaultStContext(),
-                ...(state.st_context ?? {}),
-                ...(remoteSession.st_context ?? {}),
-            };
-
-            if (state.st_context.avatar_url) {
-                await loadCharacterChats(state.st_context.avatar_url);
-            }
-        }
-
+        state.st_context = createDefaultStContext();
+        saveHistory([]);
         saveState(state);
-        await syncSession(state, nextHistory).catch(() => null);
+        await syncSession(state, []).catch(() => null);
         if (activeTab === 'story') render();
         else renderShell(profile, state);
         completed = true;

@@ -1,7 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
-import { trySaveChat } from '../endpoints/chats.js';
 import {
     buildStSummary,
     getProviderSummaryFromSettings,
@@ -12,31 +8,6 @@ import {
     readUserSettings,
 } from './context-loader.js';
 import { assemblePromptPayload } from './prompt-assembly.js';
-
-function createChatHeader(chatMetadata, binding) {
-    return {
-        chat_metadata: chatMetadata,
-        user_name: binding.user_name,
-        character_name: binding.character_name,
-    };
-}
-
-function createChatMessage(role, content, binding) {
-    return {
-        name: role === 'user' ? binding.user_name : binding.character_name,
-        is_user: role === 'user',
-        is_system: false,
-        send_date: new Date().toISOString(),
-        mes: String(content ?? ''),
-        extra: {
-            type: 'daydream',
-        },
-    };
-}
-
-function historyToChatMessages(history, binding) {
-    return normalizeHistoryItems(history).map(item => createChatMessage(item.role, item.content, binding));
-}
 
 function buildDayDreamMetadata(session, payload, generation, assistantText) {
     const state = payload.state ?? {};
@@ -141,60 +112,10 @@ export async function assembleDayDreamGeneration(request, payload, session, opti
 }
 
 export async function persistDayDreamTurn(request, session, payload, generation, assistantText) {
-    if (!request.user?.directories || !generation.chatBinding.avatar_url) {
-        return {
-            chatMetadata: buildDayDreamMetadata(session, payload, generation, assistantText),
-            st_context: generation.st_context,
-        };
-    }
-
-    const { avatar_url: avatarUrl, chat_name: chatName } = generation.chatBinding;
-    const cardName = String(avatarUrl).replace('.png', '');
-    const chatDirectory = path.join(request.user.directories.chats, cardName);
-    const chatPath = path.join(chatDirectory, `${chatName}.jsonl`);
-    const baseChat = Array.isArray(generation.stData.chatData) && generation.stData.chatData.length > 0
-        ? structuredClone(generation.stData.chatData)
-        : [];
     const chatMetadata = buildDayDreamMetadata(session, payload, generation, assistantText);
-    const userMessage = createChatMessage('user', payload.message ?? '', generation.chatBinding);
-    const assistantMessage = createChatMessage('assistant', assistantText ?? '', generation.chatBinding);
-    const chatData = baseChat.length > 0
-        ? baseChat
-        : [
-            createChatHeader(chatMetadata, generation.chatBinding),
-            ...historyToChatMessages(payload.history, generation.chatBinding),
-        ];
-
-    if (chatData.length === 0) {
-        chatData.push(createChatHeader(chatMetadata, generation.chatBinding));
-    }
-
-    if (!chatData[0]?.chat_metadata) {
-        chatData[0] = createChatHeader(chatMetadata, generation.chatBinding);
-    } else {
-        chatData[0].chat_metadata = chatMetadata;
-        chatData[0].user_name = generation.chatBinding.user_name;
-        chatData[0].character_name = generation.chatBinding.character_name;
-    }
-
-    chatData.push(userMessage, assistantMessage);
-    fs.mkdirSync(chatDirectory, { recursive: true });
-
-    await trySaveChat(
-        chatData,
-        chatPath,
-        false,
-        request.user.profile.handle,
-        cardName,
-        request.user.directories.backups,
-    );
 
     return {
         chatMetadata,
-        st_context: {
-            ...generation.st_context,
-            avatar_url: avatarUrl,
-            chat_name: chatName,
-        },
+        st_context: generation.st_context,
     };
 }

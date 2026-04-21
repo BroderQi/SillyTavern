@@ -27,7 +27,7 @@ function createDefaultSession(sessionId, seed = {}) {
     const now = new Date().toISOString();
     const stContext = { ...(seed?.st_context ?? {}) };
     const state = { ...(seed?.state ?? {}) };
-    const history = Array.isArray(seed?.history) ? seed.history : [];
+    const history = [];
     const session = {
         session_id: sessionId,
         created_at: now,
@@ -120,6 +120,6 @@ export function upsertSession(directories, sessionId, updater = {}) {
             ...(session.state ?? {}),
             ...(updater?.state ?? {}),
         },
-        history: Array.isArray(updater?.history) ? updater.history : (session.history ?? []),
+        history: [],
     });
 }

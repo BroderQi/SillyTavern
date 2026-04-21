@@ -48,7 +48,56 @@ function getUiMapping(profile) {
             tab_label: findLabel('inventory', 'Inventory'),
             fields: ['resources'],
         },
+        world: {
+            tab_label: findLabel('world', 'World Book'),
+            fields: ['world_entries'],
+        },
     };
+}
+
+function getProductTabs(profile) {
+    const tabs = [...(profile?.tabs ?? [])];
+    if (!tabs.some(tab => tab.key === 'world')) {
+        const settingsIndex = tabs.findIndex(tab => tab.key === 'settings');
+        const worldTab = { key: 'world', label: '世界书' };
+        if (settingsIndex >= 0) {
+            tabs.splice(settingsIndex, 0, worldTab);
+        } else {
+            tabs.push(worldTab);
+        }
+    }
+
+    return tabs;
+}
+
+function formatDayDreamWorldEntry(entry) {
+    if (!entry || typeof entry !== 'object' || entry.enabled === false) {
+        return '';
+    }
+
+    const title = compact(entry.title || entry.name || entry.comment || 'World Entry', 'World Entry');
+    const keys = Array.isArray(entry.keys) && entry.keys.length
+        ? `Keywords: ${entry.keys.join(', ')}`
+        : '';
+    const content = compact(entry.content || entry.detail || entry.description || entry.summary || '', '');
+
+    if (!content && !keys) {
+        return '';
+    }
+
+    return [`- ${title}`, keys, content].filter(Boolean).join('\n');
+}
+
+function buildDayDreamWorldBook(state) {
+    const entries = Array.isArray(state?.world_entries)
+        ? state.world_entries.map(formatDayDreamWorldEntry).filter(Boolean)
+        : [];
+
+    if (!entries.length) {
+        return '';
+    }
+
+    return `[DayDream Editable World Book]\n${entries.join('\n\n')}`;
 }
 
 export function buildSystemSections({ story, state, uiProfiles, corePrompt, turnPrompt, endingPrompt, settings, stContext, stData, message }) {
@@ -59,6 +108,7 @@ export function buildSystemSections({ story, state, uiProfiles, corePrompt, turn
     const authorNote = extractAuthorNote(settings, stData.chatMetadata, stContext);
     const characterContext = extractCharacterContext(stData.characterData, stData.chatMetadata);
     const worldInfoText = flattenWorldInfoBooks(stData.worldBooks);
+    const dayDreamWorldBook = buildDayDreamWorldBook(state);
     const uiMapping = getUiMapping(profile);
     const sections = [corePrompt];
 
@@ -88,6 +138,10 @@ export function buildSystemSections({ story, state, uiProfiles, corePrompt, turn
         sections.push(worldInfoText);
     }
 
+    if (dayDreamWorldBook) {
+        sections.push(dayDreamWorldBook);
+    }
+
     sections.push([
         '[DayDream Current Story]',
         JSON.stringify(story ?? {}, null, 2),
@@ -98,11 +152,11 @@ export function buildSystemSections({ story, state, uiProfiles, corePrompt, turn
         '[DayDream Visible UI]',
         JSON.stringify({
             top_stats: stateBlock.visible_stats,
-            tabs: (profile.tabs ?? []).map(tab => ({ key: tab.key, label: tab.label })),
+            tabs: getProductTabs(profile).map(tab => ({ key: tab.key, label: tab.label })),
             mapping: uiMapping,
         }, null, 2),
         '',
-        '[DayDream Output Contract] Visible text must output title, environment, plot, and options first. State changes, resources, events, relationships, foreshadows, and stat updates must be written to the ending <!-- DAYDREAM_META ... --> JSON comment block. Only update keys visible in top_stats.',
+        '[DayDream Output Contract] Visible text must output title, environment, plot, and options first. State changes, people/relationships, resources, events, foreshadows, editable world book entries, and stat updates must be written to the ending <!-- DAYDREAM_META ... --> JSON comment block. Only update keys visible in top_stats. Write durable generated lore to world_entries as objects with title, keys, content, and enabled.',
         '',
         turnPrompt,
         isEnding ? `\n${endingPrompt}` : '',

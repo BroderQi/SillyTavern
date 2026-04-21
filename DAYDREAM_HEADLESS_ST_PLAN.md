@@ -142,20 +142,41 @@ These should not block v1:
 
 - custom DayDream public UI only
 - SillyTavern-backed model generation
-- character card fields
-- chat history persistence in SillyTavern chat format
-- world info activation and prompt injection
-- Author's Note injection
-- system prompt override support
+- DayDream-native people/relationship cards, editable by the user
+- DayDream-native editable world book entries generated from `DAYDREAM_META`
+- lightweight session state persistence, without full chat transcript persistence
+- hidden Author's Note injection
+- hidden system prompt support
 - instruct mode support where applicable
-- selected provider preset and settings support
+- hidden provider preset and settings support
 - streaming back to DayDream UI
 
 ### V1 intentionally limited
 
+- full chat history persistence is disabled in v1 to avoid memory/storage growth
+- ST role card, chat, world info, Author's Note, system prompt, and provider controls are not exposed in the DayDream UI
 - slash commands only for internal/admin or disabled entirely
 - extension prompt support only for explicitly supported modules
 - macro support only where already covered by reused prompt assembly functions
+
+### Product UI Scope
+
+DayDream exposes only product-level controls:
+
+- People: the relationship/person tab acts as DayDream's user-facing character card layer. Users can add, edit, and delete people.
+- World book: DayDream can generate durable world entries through `DAYDREAM_META.world_entries`; users can add, edit, delete, enable, and disable entries.
+- Settings: only DayDream actions are visible, such as restarting, ending, or clearing local state.
+
+DayDream hides backend mechanics:
+
+- full chat logs
+- ST chat selection
+- ST world info selection
+- Author's Note
+- system prompt
+- provider/model routing
+- prompt assembly
+- extension prompt injection
 
 ## Target Architecture
 
@@ -193,14 +214,10 @@ Each DayDream run should map to a SillyTavern-compatible session context.
 
 - `session_id`
 - `story_id`
-- `character_avatar` or internal character key
-- `chat_name`
+- DayDream people records
 - `chat_metadata`
-- `selected_world_info`
-- `author_note_config`
-- `system_prompt_override`
-- `preset_identity`
-- `provider_source`
+- DayDream world book entries
+- hidden orchestration summary, when needed
 
 ### Recommendation
 
@@ -213,8 +230,8 @@ Instead:
 
 This allows DayDream to use:
 
-- native chat persistence
-- native world info bindings
+- resumable lightweight state
+- editable people and world book data
 - server-side recovery
 - future multi-device continuation
 
@@ -230,7 +247,9 @@ A frozen implementation scope for v1.
 
 - DayDream keeps its current standalone UI
 - SillyTavern native UI is not exposed to end users
-- v1 supports character card, chat history, world info, Author's Note, system prompt, instruct mode, presets
+- v1 exposes DayDream people and world book editing
+- v1 hides chat history, Author's Note, system prompt, model routing, prompt assembly, and extension injection
+- v1 does not save full chat transcripts
 - v1 does not promise full slash-command parity
 
 ### Acceptance criteria
@@ -369,17 +388,18 @@ Replace the current direct DayDream provider proxy with the new orchestration ba
 - DayDream frontend does not need major UX changes
 - Backend request path no longer directly calls upstream `/chat/completions`
 
-## Phase 6: Persist DayDream + ST Combined Metadata
+## Phase 6: Persist Lightweight DayDream Metadata
 
 ### Goal
 
-Save enough metadata to make sessions resumable and lore-aware.
+Save enough metadata to make sessions resumable and lore-aware without storing full chat transcripts.
 
 ### Tasks
 
-- Persist DayDream gameplay state in chat metadata
-- Persist session bindings to selected world info and prompts
-- Keep compatibility with SillyTavern save/load flow where possible
+- Persist DayDream gameplay state in the DayDream session record
+- Persist user-editable people records
+- Persist user-editable world book entries
+- Do not persist complete user/assistant chat history in v1
 
 Suggested metadata keys:
 
@@ -390,7 +410,8 @@ Suggested metadata keys:
 
 ### Acceptance criteria
 
-- Reloading a DayDream session restores both gameplay state and ST orchestration state
+- Reloading a DayDream session restores story state, people, world book entries, resources, events, and visible stats
+- No ST chat transcript is created or appended during normal DayDream generation
 
 ## Phase 7: Optional Advanced Features
 
@@ -442,15 +463,17 @@ Do not block v1 on these.
 
 | Capability | V1 status | Reuse mode | Notes |
 | --- | --- | --- | --- |
-| Character card fields | Yes | reuse/extract | Requires server-side context loader |
-| Chat history | Yes | reuse | Use native ST chat format and persistence |
-| World Info | Yes | extract | High-value feature, should be in v1 |
-| Author's Note | Yes | extract | Tie to chat metadata |
-| System Prompt | Yes | reuse/extract | Support override path |
+| DayDream people cards | Yes | DayDream-native | User-facing character/relationship layer with add/edit/delete |
+| ST character card fields | Hidden/optional | reuse/extract | Backend-only; do not expose native ST UI in v1 |
+| Chat history | No | defer | Do not save full transcripts in v1 |
+| DayDream world book | Yes | DayDream-native | Generated via `world_entries`, user-editable |
+| ST World Info | Hidden/optional | extract | Backend-only if explicitly bound later |
+| Author's Note | Hidden | extract | Internal control only |
+| System Prompt | Hidden | reuse/extract | Internal control only |
 | Instruct Mode | Yes | reuse/extract | Important for non-OpenAI style flows |
-| Provider presets | Yes | reuse | Use existing settings/preset data |
+| Provider presets | Hidden | reuse | Service-owned routing; no user-facing model controls |
 | User setting transforms | Mostly | reuse/extract | Depends on assembled prompt path |
-| Extension prompt injection | Partial | extract | Support only required modules in v1 |
+| Extension prompt injection | Hidden/partial | extract | Support only required modules in v1 |
 | Macros | Partial | defer | Only where already covered naturally |
 | Slash commands | No for end users | defer | Admin/debug only after v1 |
 
@@ -496,11 +519,11 @@ The project is successful when all of the following are true:
 
 1. Users interact only with DayDream UI.
 2. DayDream no longer calls upstream model providers directly.
-3. A DayDream run can use ST-backed character card data.
-4. A DayDream run can use ST-backed chat history.
-5. A DayDream run can activate ST world info.
-6. A DayDream run can apply ST Author's Note and system prompt logic.
-7. Provider selection and preset changes affect DayDream without separate provider code.
+3. Users can add, edit, and delete DayDream people records.
+4. Users can add, edit, delete, enable, and disable DayDream world book entries.
+5. DayDream does not save full chat transcripts during normal generation.
+6. DayDream can apply hidden Author's Note and system prompt logic.
+7. Provider routing is service-owned and hidden from users.
 8. Streaming still works in the public DayDream page.
 9. The implementation reuses existing ST modules wherever practical instead of recreating them.
 

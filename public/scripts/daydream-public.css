@@ -319,7 +319,7 @@ button {
 
 .dd-tabs {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
     min-height: 80px;
     padding: 8px 10px 12px;
     background: rgba(226, 235, 224, 0.94);
@@ -508,6 +508,87 @@ button {
     font-weight: 800;
 }
 
+.dd-panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.dd-panel-title h2 {
+    margin-bottom: 0;
+}
+
+.dd-small-action {
+    min-width: 64px;
+    min-height: 36px;
+    padding: 0 12px;
+    color: #fff;
+    background: var(--primary);
+    border: 0;
+    border-radius: 8px;
+    font-weight: 800;
+}
+
+.dd-protagonist,
+.dd-editable-row {
+    display: grid;
+    gap: 4px;
+    padding: 12px;
+    color: var(--ink);
+    background: rgba(250, 248, 239, 0.78);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.dd-protagonist {
+    margin-bottom: 10px;
+}
+
+.dd-protagonist span,
+.dd-editable-row span {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.dd-editable-row {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+}
+
+.dd-editable-row.disabled {
+    opacity: 0.62;
+}
+
+.dd-row-actions {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 6px;
+}
+
+.dd-row-actions button {
+    min-height: 34px;
+    padding: 0 8px;
+    color: var(--primary-strong);
+    background: rgba(47, 111, 100, 0.08);
+    border: 1px solid rgba(47, 111, 100, 0.18);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.dd-checkbox-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dd-checkbox-line input {
+    width: auto;
+}
+
 .dd-empty,
 .dd-error {
     padding: 20px;
@@ -562,6 +643,15 @@ button {
 
     .dd-card {
         padding: 18px;
+    }
+
+    .dd-editable-row {
+        grid-template-columns: 1fr;
+    }
+
+    .dd-row-actions {
+        grid-auto-flow: row;
+        grid-template-columns: repeat(3, 1fr);
     }
 
     .dd-entry-grid {

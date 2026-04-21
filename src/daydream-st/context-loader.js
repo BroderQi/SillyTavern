@@ -197,6 +197,9 @@ export function buildStateBlock(story, state, profile) {
         stats: state.stats ?? {},
         character: state.character ?? {},
         relationships: state.relationships ?? [],
+        world_entries: Array.isArray(state.world_entries)
+            ? state.world_entries.filter(entry => entry?.enabled !== false)
+            : [],
         resources: state.resources ?? [],
         triggered_events: state.triggered_events ?? [],
         main_objective: state.main_objective ?? '',
@@ -326,8 +329,9 @@ export async function loadSillyTavernContext(request, stContext = {}) {
         }).catch(() => null)
         : null;
 
-    const candidateChatName = stContext.chat_name || characterData?.chat || '';
-    const chatFilePath = stContext.avatar_url && candidateChatName
+    const shouldLoadChatHistory = stContext.enable_chat_history === true;
+    const candidateChatName = shouldLoadChatHistory ? (stContext.chat_name || characterData?.chat || '') : '';
+    const chatFilePath = shouldLoadChatHistory && stContext.avatar_url && candidateChatName
         ? getChatFilePath(request.user.directories, stContext.avatar_url, candidateChatName)
         : '';
     const chatData = chatFilePath && fs.existsSync(chatFilePath)

@@ -29,7 +29,6 @@ const ENDING_PROMPT_PATH = path.join(DAYDREAM_DIR, 'prompts', 'ending.md');
 
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const DEFAULT_MODEL = 'gpt-4o-mini';
-const MAX_HISTORY_ITEMS = 12;
 const MAX_MESSAGE_LENGTH = 4000;
 
 function readJson(filePath, fallback) {
@@ -97,16 +96,6 @@ function compact(value, fallback) {
     return value;
 }
 
-function normalizeSessionHistory(history) {
-    return (Array.isArray(history) ? history : [])
-        .filter(item => item && ['user', 'assistant'].includes(item.role) && item.content)
-        .map(item => ({
-            role: item.role,
-            content: String(item.content).slice(0, MAX_MESSAGE_LENGTH),
-        }))
-        .slice(-MAX_HISTORY_ITEMS);
-}
-
 function getBaseProfile(uiProfiles = {}) {
     return structuredClone(
         uiProfiles['通用']
@@ -116,9 +105,24 @@ function getBaseProfile(uiProfiles = {}) {
     );
 }
 
+function getProductTabs(profile) {
+    const tabs = [...(profile?.tabs ?? [])];
+    if (!tabs.some(tab => tab.key === 'world')) {
+        const settingsIndex = tabs.findIndex(tab => tab.key === 'settings');
+        const worldTab = { key: 'world', label: '世界书' };
+        if (settingsIndex >= 0) {
+            tabs.splice(settingsIndex, 0, worldTab);
+        } else {
+            tabs.push(worldTab);
+        }
+    }
+
+    return tabs;
+}
+
 function buildFallbackMessages({ body, story, uiProfiles, corePrompt, turnPrompt, endingPrompt }) {
     const state = body.state ?? {};
-    const history = Array.isArray(body.history) ? body.history.slice(-MAX_HISTORY_ITEMS) : [];
+    const history = [];
     const message = compact(body.message, '');
     const isEnding = /^\s*(结束|end)\s*$/i.test(message);
     const baseProfile = getBaseProfile(uiProfiles);
@@ -153,6 +157,7 @@ function buildFallbackMessages({ body, story, uiProfiles, corePrompt, turnPrompt
             stats: state.stats ?? {},
             character: state.character ?? {},
             relationships: state.relationships ?? [],
+            world_entries: Array.isArray(state.world_entries) ? state.world_entries.filter(entry => entry?.enabled !== false) : [],
             resources: state.resources ?? [],
             triggered_events: state.triggered_events ?? [],
             main_objective: state.main_objective ?? '',
@@ -167,7 +172,7 @@ function buildFallbackMessages({ body, story, uiProfiles, corePrompt, turnPrompt
         '[DayDream Visible UI]',
         JSON.stringify({
             top_stats: visibleStats,
-            tabs: (profile.tabs ?? []).map(tab => ({ key: tab.key, label: tab.label })),
+            tabs: getProductTabs(profile).map(tab => ({ key: tab.key, label: tab.label })),
         }, null, 2),
         '',
         turnPrompt,
@@ -265,7 +270,7 @@ router.post('/session/create', (request, response) => {
     const session = createSession(request.user.directories, {
         st_context: request.body?.st_context ?? {},
         state: request.body?.state ?? {},
-        history: request.body?.history ?? [],
+        history: [],
     });
 
     response.json(session);
@@ -305,7 +310,7 @@ router.post('/session/save', (request, response) => {
     const session = upsertSession(request.user.directories, request.body?.session_id, {
         st_context: request.body?.st_context ?? {},
         state: request.body?.state ?? {},
-        history: request.body?.history ?? [],
+        history: [],
     });
 
     response.json(session);
@@ -332,7 +337,7 @@ router.post('/generate', async (request, response) => {
             session = upsertSession(request.user.directories, body.session_id, {
                 st_context: body.st_context ?? {},
                 state: body.state ?? {},
-                history: body.history ?? [],
+                history: [],
             });
             response.setHeader('X-DayDream-Session-Id', session.session_id);
         }
@@ -351,7 +356,7 @@ router.post('/generate', async (request, response) => {
                 ...session,
                 st_context: generation.st_context,
                 state: body.state ?? session.state,
-                history: body.history ?? session.history,
+                history: [],
                 st_summary: generation.st_summary,
                 story_id: body.state?.story_id ?? story?.id ?? session.story_id,
                 character_avatar: generation.st_context.avatar_url ?? session.character_avatar,
@@ -375,13 +380,6 @@ router.post('/generate', async (request, response) => {
             if (session?.session_id) {
                 response.setHeader('X-DayDream-Session-Id', session.session_id);
             }
-            if (generation.st_context.chat_name) {
-                response.setHeader('X-DayDream-Chat-Name', generation.st_context.chat_name);
-            }
-            if (generation.st_context.avatar_url) {
-                response.setHeader('X-DayDream-Avatar-Url', generation.st_context.avatar_url);
-            }
-
             return await proxyEventStream(upstream, response, {
                 onComplete: async ({ text }) => {
                     if (!session) {
@@ -393,24 +391,17 @@ router.post('/generate', async (request, response) => {
                             request,
                             session,
                             { ...body, story },
-                            {
-                                assistantText: text,
-                                resolvedProvider: generation.resolvedProvider,
-                                st_summary: generation.st_summary,
-                            },
+                            generation,
+                            text,
                         );
 
-                        const nextHistory = [
-                            ...normalizeSessionHistory(body.history),
-                            { role: 'user', content: compact(body.message, '') },
-                            { role: 'assistant', content: String(text ?? '').slice(0, MAX_MESSAGE_LENGTH) },
-                        ].slice(-MAX_HISTORY_ITEMS);
-
                         session = saveSession(request.user.directories, {
+                            ...session,
                             ...persisted,
+                            chat_metadata: persisted.chatMetadata ?? session.chat_metadata,
                             st_context: persisted.st_context ?? generation.st_context,
                             state: body.state ?? persisted.state,
-                            history: nextHistory,
+                            history: [],
                             st_summary: generation.st_summary,
                             story_id: body.state?.story_id ?? story?.id ?? persisted.story_id,
                             character_avatar: persisted.st_context?.avatar_url ?? generation.st_context.avatar_url ?? persisted.character_avatar,
@@ -422,7 +413,7 @@ router.post('/generate', async (request, response) => {
                             provider_source: generation.resolvedProvider.chat_completion_source ?? persisted.provider_source,
                         });
                     } catch (error) {
-                        console.error('Failed to persist DayDream SillyTavern chat:', error);
+                        console.error('Failed to persist DayDream lightweight session metadata:', error);
                     }
                 },
             });
