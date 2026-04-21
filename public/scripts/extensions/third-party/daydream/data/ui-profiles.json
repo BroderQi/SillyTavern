@@ -91,6 +91,15 @@
             { "key": "energy", "label": "心力", "icon": "seedling" },
             { "key": "trust_level", "label": "信任", "icon": "heart" },
             { "key": "growth", "label": "成长", "icon": "arrow-trend-up" }
+        ],
+        "tabs": [
+            { "key": "story", "label": "剧情", "icon": "book-open" },
+            { "key": "relations", "label": "陪伴", "icon": "users" },
+            { "key": "messages", "label": "日记", "icon": "book" },
+            { "key": "stats", "label": "状态", "icon": "seedling" },
+            { "key": "events", "label": "回忆", "icon": "heart" },
+            { "key": "inventory", "label": "纪念", "icon": "box-open" },
+            { "key": "settings", "label": "设置", "icon": "gear" }
         ]
     },
     "经营积累": {
@@ -116,6 +125,15 @@
             { "key": "energy", "label": "体力", "icon": "heart-pulse" },
             { "key": "reputation", "label": "声望", "icon": "star" },
             { "key": "leverage", "label": "筹码", "icon": "chess-knight" }
+        ],
+        "tabs": [
+            { "key": "story", "label": "剧情", "icon": "book-open" },
+            { "key": "relations", "label": "对手", "icon": "users" },
+            { "key": "messages", "label": "舆论", "icon": "comments" },
+            { "key": "stats", "label": "实力", "icon": "chart-line" },
+            { "key": "events", "label": "战绩", "icon": "flag" },
+            { "key": "inventory", "label": "底牌", "icon": "box-open" },
+            { "key": "settings", "label": "设置", "icon": "gear" }
         ]
     }
 }

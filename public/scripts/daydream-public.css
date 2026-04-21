@@ -63,6 +63,26 @@ button {
     padding: 24px 28px 8px;
 }
 
+.dd-title-stack {
+    min-width: 0;
+}
+
+.dd-brand {
+    margin-bottom: 5px;
+    color: var(--primary-strong);
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.dd-brand span {
+    display: inline;
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
 .dd-header h1 {
     max-width: 290px;
     margin: 0;
@@ -74,7 +94,7 @@ button {
     white-space: nowrap;
 }
 
-.dd-header span {
+.dd-story-class {
     display: block;
     margin-top: 4px;
     color: var(--secondary);
@@ -267,13 +287,14 @@ button {
     display: grid;
     align-content: center;
     justify-items: center;
-    gap: 5px;
     min-width: 0;
+    min-height: 44px;
     color: var(--muted);
     background: transparent;
     border: 0;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 700;
 }
 
 .dd-tab.active {
@@ -281,11 +302,7 @@ button {
     background: rgba(47, 111, 100, 0.12);
 }
 
-.dd-tab span:first-child {
-    font-size: 18px;
-}
-
-.dd-tab span:last-child {
+.dd-tab span {
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -306,6 +323,7 @@ button {
 }
 
 .dd-dialog {
+    position: relative;
     width: min(100%, 390px);
     max-height: 90vh;
     overflow: auto;
@@ -314,6 +332,26 @@ button {
     border: 1px solid rgba(47, 111, 100, 0.34);
     border-radius: 12px;
     box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+}
+
+.dd-dialog-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    color: var(--primary-strong);
+    background: rgba(47, 111, 100, 0.08);
+    border: 1px solid rgba(47, 111, 100, 0.16);
+    border-radius: 999px;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.dd-dialog-close:hover {
+    background: rgba(47, 111, 100, 0.14);
 }
 
 .dd-dialog h2 {

@@ -4,13 +4,12 @@
 cd /opt/SillyTavern
 git pull
 
-cp /opt/SillyTavern/deploy/nginx/bkgf-daydream.conf /etc/nginx/conf.d/bkgf-daydream.conf
-nginx -t
-systemctl reload nginx
+cat /opt/SillyTavern/deploy/nginx/bkgf-daydream.conf > /etc/nginx/conf.d/bkgf-daydream.conf
+nginx -t && systemctl reload nginx
 systemctl restart daydream-sillytavern
 curl -I https://bkgf.net/ | grep -i referrer-policy
 
-如果仍然显示 `referrer-policy: no-referrer`，说明线上实际生效的配置仍在透传上游响应头，或请求命中了其他 server/location。检查 Nginx 最终加载配置：
+如果第一个 `grep` 没有输出，说明服务器代码还没拉到包含 `Referrer-Policy` 的版本。如果第二个 `grep` 没有输出，说明配置没有复制到 `/etc/nginx/conf.d/`。如果两个 `grep` 都有输出但仍然显示 `referrer-policy: no-referrer`，检查 Nginx 最终加载配置：
 
 ```bash
 nginx -T | grep -i -C 3 "referrer-policy\|server_name bkgf"

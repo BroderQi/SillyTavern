@@ -57,16 +57,6 @@ const statLabels = {
     reputation: '声望',
 };
 
-const tabIcons = {
-    story: '书',
-    relations: '人',
-    messages: '信',
-    stats: '衡',
-    events: '旗',
-    inventory: '库',
-    settings: '设',
-};
-
 let stories = [];
 let uiProfiles = {};
 let provider = {};
@@ -234,7 +224,6 @@ function renderTabs(profile) {
 
     qs('#dd_tabs').innerHTML = tabs.map(tab => `
         <button class="dd-tab ${tab.key === activeTab ? 'active' : ''}" data-tab="${escapeHtml(tab.key)}">
-            <span>${escapeHtml(tabIcons[tab.key] || '点')}</span>
             <span>${escapeHtml(tab.label)}</span>
         </button>
     `).join('');
@@ -388,6 +377,7 @@ function showSetup() {
     qs('#dd_modal').hidden = false;
     qs('#dd_modal').innerHTML = `
         <div class="dd-dialog">
+            <button id="dd_close_setup" class="dd-dialog-close" title="关闭" aria-label="关闭">×</button>
             <h2>创建角色</h2>
             <p>选择故事后直接进入第一幕。</p>
             <label>角色姓名</label>
@@ -406,6 +396,7 @@ function showSetup() {
         </div>
     `;
 
+    qs('#dd_close_setup').addEventListener('click', hideSetup);
     document.querySelectorAll('.dd-gender').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('.dd-gender').forEach(item => item.classList.remove('active'));
