@@ -57,11 +57,11 @@ function readPrompt(filePath) {
 }
 
 function getFallbackProviderConfig() {
-    const apiKey = process.env.DayDreamer_API_KEY || getConfigValue('DayDreamer.apiKey', '');
-    const baseUrl = process.env.DayDreamer_BASE_URL || getConfigValue('DayDreamer.baseUrl', DEFAULT_BASE_URL);
-    const model = process.env.DayDreamer_MODEL || getConfigValue('DayDreamer.model', DEFAULT_MODEL);
+    const apiKey = process.env.DayDreamer_API_KEY || process.env.DAYDREAM_API_KEY || getConfigValue('DayDreamer.apiKey', '');
+    const baseUrl = process.env.DayDreamer_BASE_URL || process.env.DAYDREAM_BASE_URL || getConfigValue('DayDreamer.baseUrl', DEFAULT_BASE_URL);
+    const model = process.env.DayDreamer_MODEL || process.env.DAYDREAM_MODEL || getConfigValue('DayDreamer.model', DEFAULT_MODEL);
     const enabled = Boolean(apiKey) && getConfigValue('DayDreamer.enabled', true, 'boolean');
-    const responseTokens = Number(process.env.DayDreamer_RESPONSE_TOKENS || getConfigValue('DayDreamer.responseTokens', 1200, 'number'));
+    const responseTokens = Number(process.env.DayDreamer_RESPONSE_TOKENS || process.env.DAYDREAM_RESPONSE_TOKENS || getConfigValue('DayDreamer.responseTokens', 1200, 'number'));
 
     return {
         configured: enabled,
