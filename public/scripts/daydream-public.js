@@ -194,6 +194,7 @@ function render() {
     const state = loadState();
     const story = getStory(state);
     const profile = getProfile(story);
+    if (syncDerivedStats(state, profile)) saveState(state);
 
     qs('#dd_story_title').textContent = story?.title || 'DayDream';
     qs('#dd_story_class').textContent = story?.story_class || '世界引擎';
@@ -324,7 +325,10 @@ function renderStatsPanel(state, profile, title) {
             <h2>${escapeHtml(title)}</h2>
             ${visibleStats.length ? `<div class="dd-list">
                 ${visibleStats.map(stat => `
-                    <div class="dd-story-choice"><b>${escapeHtml(stat.label || statLabels[stat.key] || stat.key)}</b><span>${escapeHtml(stat.value)}</span></div>
+                    <div class="dd-story-choice dd-stat-row">
+                        <b>${escapeHtml(stat.label || statLabels[stat.key] || stat.key)}</b>
+                        <span>${escapeHtml(stat.value)}</span>
+                    </div>
                 `).join('')}
             </div>` : '<div class="dd-empty">暂无状态记录。</div>'}
         </section>
@@ -357,9 +361,7 @@ function renderSettings(story) {
                 <button id="dd_end_story" class="dd-story-choice">生成结局</button>
                 <button id="dd_clear_local" class="dd-story-choice">清空本地存档</button>
             </div>
-            <div class="${provider.configured ? 'dd-empty' : 'dd-error'}" style="margin-top:12px;">
-                ${provider.configured ? `模型：${escapeHtml(provider.model)}` : '服务器尚未配置 DayDream 模型。'}
-            </div>
+            ${provider.configured ? '' : '<div class="dd-error" style="margin-top:12px;">服务器尚未配置 DayDream 模型。</div>'}
             <div class="dd-empty" style="margin-top:12px;">${escapeHtml(story?.title || '未选择故事')}</div>
         </section>
     `;
@@ -671,7 +673,20 @@ function prependRecords(current, incoming, limit = 20) {
     }).slice(0, limit);
 }
 
-function applyMetaUpdates(state, meta) {
+function syncDerivedStats(state, profile) {
+    let changed = false;
+    const topKeys = new Set((profile?.top_stats ?? []).map(stat => stat.key));
+    if (topKeys.has('clues')) {
+        const clues = prependRecords([], [...(state.active_hooks ?? []), ...(state.pending_foreshadows ?? [])], 999).length;
+        if (state.stats.clues !== clues) {
+            state.stats.clues = clues;
+            changed = true;
+        }
+    }
+    return changed;
+}
+
+function applyMetaUpdates(state, meta, profile) {
     if (!meta || typeof meta !== 'object') return;
 
     applyStatsObject(state, meta.stats_delta, 'delta');
@@ -695,6 +710,7 @@ function applyMetaUpdates(state, meta) {
     state.active_hooks = prependRecords(state.active_hooks, meta.active_hooks);
     state.pending_foreshadows = prependRecords(state.pending_foreshadows, meta.pending_foreshadows);
     state.important_branches = prependRecords(state.important_branches, meta.important_branches);
+    syncDerivedStats(state, profile);
 }
 
 function renderStreamingReply(story, text) {
@@ -771,6 +787,7 @@ async function sendAction(text) {
 
     const state = loadState();
     const story = getStory(state);
+    const profile = getProfile(story);
     if (isGenerating) {
         pendingAction = message;
         renderPendingOption();
@@ -827,10 +844,11 @@ async function sendAction(text) {
         state.near_ending = scene.isEnding;
         state.stats.turn_count = Number(state.stats.turn_count || 0) + (scene.isEnding ? 0 : 1);
         if (scene.meta) {
-            applyMetaUpdates(state, scene.meta);
+            applyMetaUpdates(state, scene.meta, profile);
         } else {
             applyStatusText(state, scene.status);
             if (scene.status) state.triggered_events = [scene.status, ...(state.triggered_events ?? [])].slice(0, 20);
+            syncDerivedStats(state, profile);
         }
 
         saveHistory([...history, { role: 'user', content: message }, { role: 'assistant', content: stripDayDreamMeta(data.text) || scene.plot }]);

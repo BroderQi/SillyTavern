@@ -56,8 +56,10 @@ SillyTavern 兼容输出协议：
 元数据规则：
 - JSON 必须合法，不能有注释，不能使用 Markdown 代码块。
 - options 必须正好 4 个，只写方法或姿态，不剧透结果、真相、奖励或最优解。
-- stats_delta 只写本回合变化；stats 写变化后的最终数值。优先使用当前可见 UI 中存在的状态 key。
+- stats_delta 只写本回合变化；stats 写变化后的最终数值。只使用当前可见 UI 的 top_stats 中存在的状态 key。
+- 如果本回合新增线索、地图点、通讯或可追踪情报，并且 top_stats 中存在 clues/线索，则必须同步更新 stats.clues 为当前线索总数。
 - events 只记录剧情事实，不要把数值变化整段塞进 events。
+- 必须按照当前可见 UI 的 mapping 写入元数据：人物/队伍/关系写 relationships；线索/地图/通讯/消息写 active_hooks 或 pending_foreshadows；案件/事件/项目/战绩写 events 或 important_branches；证物/物资/资产/府库/底牌写 resources。
 - 如果没有某类更新，使用空数组或省略该字段。
 - 不要在可见正文中输出状态变化、属性结算、事件账本、JSON、内部字段名或隐藏推理；这些只写入注释元数据块。
 - 历史聊天只会保留可见正文；跨回合连续性主要依赖当前状态块，所以不要把关键信息只写在注释里。重要线索必须在正文中自然出现一次，并在元数据中登记。

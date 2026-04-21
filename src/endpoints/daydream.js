@@ -41,6 +41,41 @@ function getProfile(story, uiProfiles) {
     return profile;
 }
 
+function getTabLabel(profile, key, fallback) {
+    return profile.tabs?.find(tab => tab.key === key)?.label ?? fallback;
+}
+
+function getUiMapping(profile) {
+    return {
+        top_stats: '顶部属性栏，只显示当前故事最重要的快照属性；只更新这里列出的 key。',
+        stats: {
+            tab_label: getTabLabel(profile, 'stats', '属性'),
+            fields: ['status_changes', 'stats_delta', 'stats'],
+            rule: '底部属性/状态页展示与顶部属性栏同一组 top_stats 的详情。',
+        },
+        relations: {
+            tab_label: getTabLabel(profile, 'relations', '人脉'),
+            fields: ['relationships'],
+            rule: '人物、队伍、关系、对手、人脉等变化写入 relationships。',
+        },
+        messages: {
+            tab_label: getTabLabel(profile, 'messages', '线索 / 通讯'),
+            fields: ['active_hooks', 'pending_foreshadows'],
+            rule: '线索、地图、书信、消息、通讯、舆论、日记等可继续追踪的信息写入 active_hooks 或 pending_foreshadows。',
+        },
+        events: {
+            tab_label: getTabLabel(profile, 'events', '事件'),
+            fields: ['events', 'important_branches'],
+            rule: '案件、事件、项目、战绩、回忆等已经发生或确认的事实写入 events；重大分支写入 important_branches。',
+        },
+        inventory: {
+            tab_label: getTabLabel(profile, 'inventory', '资产 / 资源'),
+            fields: ['resources'],
+            rule: '证物、物资、资产、府库、纪念、底牌等可持有或可调动对象写入 resources。',
+        },
+    };
+}
+
 function readJson(filePath, fallback) {
     try {
         return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -148,9 +183,10 @@ function buildMessages({ body, story, uiProfiles, corePrompt, turnPrompt, ending
         JSON.stringify({
             top_stats: visibleStats,
             tabs: (profile.tabs ?? []).map(tab => ({ key: tab.key, label: tab.label })),
+            mapping: getUiMapping(profile),
         }, null, 2),
         '',
-        '【DayDream 输出顺序】可见正文必须先按【标题】、【环境】、【剧情】、【选项】输出，方便用户跟随流式内容阅读。状态、事件、资源、关系、伏笔和属性结算必须写入末尾 `<!-- DAYDREAM_META ... -->` JSON 注释块。状态更新优先使用当前可见 UI 中存在的状态 key，不要发明与当前剧本无关的属性名。',
+        '【DayDream 输出顺序】可见正文必须先按【标题】、【环境】、【剧情】、【选项】输出，方便用户跟随流式内容阅读。状态、事件、资源、关系、伏笔和属性结算必须按照当前可见 UI 的 mapping 写入末尾 `<!-- DAYDREAM_META ... -->` JSON 注释块。状态更新只使用当前 top_stats 中存在的 key，不要发明与当前剧本无关的属性名。',
         '',
         turnPrompt,
         isEnding ? `\n${endingPrompt}` : '',
