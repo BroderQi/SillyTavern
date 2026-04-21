@@ -25,6 +25,10 @@ textarea {
     font: inherit;
 }
 
+select {
+    font: inherit;
+}
+
 button {
     cursor: pointer;
 }
@@ -410,12 +414,23 @@ button {
 }
 
 .dd-dialog input,
-.dd-dialog textarea {
+.dd-dialog textarea,
+.dd-dialog select,
+.dd-card input,
+.dd-card textarea,
+.dd-card select {
     width: 100%;
     padding: 12px;
     background: #fff;
     border: 1px solid var(--line);
     border-radius: 8px;
+}
+
+.dd-card label {
+    display: block;
+    margin: 12px 0 6px;
+    color: var(--ink);
+    font-weight: 700;
 }
 
 .dd-segment,
@@ -501,6 +516,29 @@ button {
     background: rgba(250, 248, 239, 0.58);
     border: 1px dashed rgba(47, 111, 100, 0.26);
     border-radius: 8px;
+}
+
+.dd-settings-form {
+    display: grid;
+    gap: 2px;
+}
+
+.dd-settings-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.dd-hint {
+    margin-top: 12px;
+    padding: 12px;
+    color: var(--muted);
+    background: rgba(47, 111, 100, 0.08);
+    border: 1px solid rgba(47, 111, 100, 0.18);
+    border-radius: 8px;
+    line-height: 1.6;
+    font-size: 13px;
 }
 
 .dd-error {

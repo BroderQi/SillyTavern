@@ -60,10 +60,13 @@ const statLabels = {
 let stories = [];
 let uiProfiles = {};
 let provider = {};
+let sillyTavern = { available: false, characters: [], world_names: [] };
 let csrfToken = '';
 let activeTab = 'story';
 let isGenerating = false;
 let pendingAction = '';
+const stCharacterChats = new Map();
+const stCharacterChatsLoading = new Set();
 
 function qs(selector) {
     return document.querySelector(selector);
@@ -78,14 +81,35 @@ function escapeHtml(value) {
         .replace(/'/g, '&#039;');
 }
 
+function createDefaultStContext() {
+    return {
+        avatar_url: '',
+        chat_name: '',
+        world_info_names: [],
+        system_prompt: '',
+        author_note: '',
+    };
+}
+
+function getDefaultProfile() {
+    return structuredClone(
+        uiProfiles['通用']
+        ?? uiProfiles.general
+        ?? Object.values(uiProfiles)[0]
+        ?? { top_stats: [], tabs: [] },
+    );
+}
+
 function createState() {
     return {
         version: '0.1.0',
+        session_id: null,
         story_id: null,
         story_title: '',
         custom_story: '',
         route: 'general_story',
         story_class: '',
+        st_context: createDefaultStContext(),
         character: { name: '', gender: '男', custom: {} },
         stats: { ...defaultStats },
         relationships: [],
@@ -111,6 +135,7 @@ function loadState() {
         return {
             ...createState(),
             ...(saved ?? {}),
+            st_context: { ...createDefaultStContext(), ...(saved?.st_context ?? {}) },
             stats: { ...defaultStats, ...(saved?.stats ?? {}) },
             character: { name: '', gender: '男', custom: {}, ...(saved?.character ?? {}) },
         };
@@ -133,6 +158,119 @@ function loadHistory() {
 
 function saveHistory(history) {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-12)));
+}
+
+async function fetchSession(sessionId) {
+    if (!sessionId || !csrfToken) {
+        return null;
+    }
+
+    const response = await fetch('/api/daydream/session/get', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({ session_id: sessionId }),
+    }).catch(() => null);
+
+    if (!response?.ok) {
+        return null;
+    }
+
+    return await response.json().catch(() => null);
+}
+
+async function restoreSessionFromServer() {
+    const state = loadState();
+    if (!state.session_id) {
+        return;
+    }
+
+    const session = await fetchSession(state.session_id);
+    if (!session) {
+        return;
+    }
+
+    const restoredState = {
+        ...createState(),
+        ...(session.state ?? {}),
+        session_id: session.session_id ?? state.session_id,
+        st_context: {
+            ...createDefaultStContext(),
+            ...(session.st_context ?? {}),
+            ...(state.st_context ?? {}),
+        },
+        stats: {
+            ...defaultStats,
+            ...(session.state?.stats ?? {}),
+        },
+        character: {
+            name: '',
+            gender: '男',
+            custom: {},
+            ...(session.state?.character ?? {}),
+        },
+    };
+
+    saveState(restoredState);
+    if (Array.isArray(session.history)) {
+        saveHistory(session.history);
+    }
+}
+
+async function syncSession(state, history = loadHistory()) {
+    if (!state?.session_id || !csrfToken) {
+        return null;
+    }
+
+    const response = await fetch('/api/daydream/session/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({
+            session_id: state.session_id,
+            st_context: state.st_context ?? {},
+            state,
+            history,
+        }),
+    }).catch(() => null);
+
+    if (!response?.ok) {
+        return null;
+    }
+
+    return await response.json().catch(() => null);
+}
+
+async function loadCharacterChats(avatarUrl) {
+    if (!avatarUrl || stCharacterChats.has(avatarUrl) || stCharacterChatsLoading.has(avatarUrl)) {
+        return stCharacterChats.get(avatarUrl) ?? [];
+    }
+
+    stCharacterChatsLoading.add(avatarUrl);
+
+    try {
+        const response = await fetch('/api/daydream/st/chats', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+            },
+            body: JSON.stringify({ avatar_url: avatarUrl }),
+        });
+
+        const chats = response.ok ? await response.json() : [];
+        stCharacterChats.set(avatarUrl, Array.isArray(chats) ? chats : []);
+        return stCharacterChats.get(avatarUrl) ?? [];
+    } catch {
+        stCharacterChats.set(avatarUrl, []);
+        return [];
+    } finally {
+        stCharacterChatsLoading.delete(avatarUrl);
+    }
 }
 
 function getStory(state = loadState()) {
@@ -168,7 +306,7 @@ function mergeProfile(base, override) {
     };
 }
 
-function getProfile(story) {
+let getProfile = function (story) {
     let profile = structuredClone(uiProfiles['通用'] ?? { top_stats: [], tabs: [] });
     if (story?.story_class && uiProfiles[story.story_class]) {
         profile = mergeProfile(profile, structuredClone(uiProfiles[story.story_class]));
@@ -177,9 +315,9 @@ function getProfile(story) {
         profile = mergeProfile(profile, story.ui_profile);
     }
     return profile;
-}
+};
 
-async function bootstrap() {
+let bootstrap = async function () {
     const [boot, csrf] = await Promise.all([
         fetch('/api/daydream/bootstrap').then(r => r.json()),
         fetch('/csrf-token').then(r => r.json()),
@@ -188,7 +326,7 @@ async function bootstrap() {
     uiProfiles = boot.uiProfiles ?? {};
     provider = boot.provider ?? {};
     csrfToken = csrf.token ?? '';
-}
+};
 
 function render() {
     const state = loadState();
@@ -246,7 +384,7 @@ function getTabLabel(profile, key, fallback) {
     return profile.tabs?.find(tab => tab.key === key)?.label ?? fallback;
 }
 
-function renderContent(tab, state, story, profile) {
+let renderContent = function (tab, state, story, profile) {
     if (tab === 'story') return renderStory(state, story);
     if (tab === 'stats') return renderStatsPanel(state, profile, getTabLabel(profile, 'stats', '属性'));
     if (tab === 'relations') return renderList(getTabLabel(profile, 'relations', '人脉'), getTabListItems('relations', state, profile), '暂无明确关系变化。');
@@ -254,7 +392,7 @@ function renderContent(tab, state, story, profile) {
     if (tab === 'events') return renderList(getTabLabel(profile, 'events', '事件'), getTabListItems('events', state, profile), '暂无已触发事件。');
     if (tab === 'inventory') return renderList(getTabLabel(profile, 'inventory', '资产 / 资源'), getTabListItems('inventory', state, profile), '暂无记录资源。');
     return renderSettings(story);
-}
+};
 
 function getTabListItems(tab, state, profile) {
     const lists = {
@@ -439,7 +577,7 @@ function renderList(title, list, emptyText) {
     `;
 }
 
-function renderSettings(story) {
+let renderSettings = function (story) {
     qs('#dd_content').innerHTML = `
         <section class="dd-card">
             <h2>设置</h2>
@@ -459,7 +597,7 @@ function renderSettings(story) {
         localStorage.removeItem(HISTORY_KEY);
         render();
     });
-}
+};
 
 function showSetup() {
     const state = loadState();
@@ -870,7 +1008,7 @@ async function readDayDreamStream(response, onDelta) {
     return { text: fullText, model };
 }
 
-async function sendAction(text) {
+let sendAction = async function (text) {
     const message = String(text ?? '').trim();
     if (!message) return;
 
@@ -910,13 +1048,34 @@ async function sendAction(text) {
                 'Accept': 'text/event-stream',
                 'X-CSRF-Token': csrfToken,
             },
-            body: JSON.stringify({ story, state, message, history }),
+            body: JSON.stringify({
+                session_id: state.session_id,
+                st_context: state.st_context ?? {},
+                story,
+                state,
+                message,
+                history,
+            }),
         });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.error || '生成失败');
         }
 
+        const sessionId = response.headers.get('x-daydream-session-id');
+        if (sessionId) {
+            state.session_id = sessionId;
+        }
+        const avatarUrl = response.headers.get('x-daydream-avatar-url');
+        const chatName = response.headers.get('x-daydream-chat-name');
+        if (avatarUrl || chatName) {
+            state.st_context = {
+                ...createDefaultStContext(),
+                ...(state.st_context ?? {}),
+                ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+                ...(chatName ? { chat_name: chatName } : {}),
+            };
+        }
         let lastPaint = 0;
         const data = await readDayDreamStream(response, (streamText) => {
             const now = Date.now();
@@ -943,8 +1102,10 @@ async function sendAction(text) {
             syncDerivedStats(state, profile);
         }
 
-        saveHistory([...history, { role: 'user', content: message }, { role: 'assistant', content: stripDayDreamMeta(data.text) || scene.plot }]);
+        const nextHistory = [...history, { role: 'user', content: message }, { role: 'assistant', content: stripDayDreamMeta(data.text) || scene.plot }];
+        saveHistory(nextHistory);
         saveState(state);
+        await syncSession(state, nextHistory).catch(() => null);
         if (activeTab === 'story') render();
         else renderShell(profile, state);
         completed = true;
@@ -961,11 +1122,301 @@ async function sendAction(text) {
             sendAction(action);
         }
     }
-}
+};
 
 function renderError(message) {
     qs('#dd_content').innerHTML = `<section class="dd-card"><div class="dd-error">${escapeHtml(message)}</div></section>`;
 }
+
+getProfile = function (story) {
+    let profile = getDefaultProfile();
+    if (story?.story_class && uiProfiles[story.story_class]) {
+        profile = mergeProfile(profile, structuredClone(uiProfiles[story.story_class]));
+    }
+    if (story?.ui_profile) {
+        profile = mergeProfile(profile, story.ui_profile);
+    }
+    return profile;
+};
+
+bootstrap = async function () {
+    const [boot, csrf] = await Promise.all([
+        fetch('/api/daydream/bootstrap').then(r => r.json()),
+        fetch('/csrf-token').then(r => r.json()),
+    ]);
+
+    stories = boot.stories ?? [];
+    uiProfiles = boot.uiProfiles ?? {};
+    provider = boot.provider ?? {};
+    sillyTavern = boot.sillyTavern ?? { available: false, characters: [], world_names: [] };
+    csrfToken = csrf.token ?? '';
+
+    await restoreSessionFromServer();
+
+    const restoredState = loadState();
+    if (restoredState.st_context?.avatar_url) {
+        await loadCharacterChats(restoredState.st_context.avatar_url);
+    }
+};
+
+renderContent = function (tab, state, story, profile) {
+    if (tab === 'story') return renderStory(state, story);
+    if (tab === 'stats') return renderStatsPanel(state, profile, getTabLabel(profile, 'stats', 'Stats'));
+    if (tab === 'relations') return renderList(getTabLabel(profile, 'relations', 'Relations'), getTabListItems('relations', state, profile), 'No relation updates yet.');
+    if (tab === 'messages') return renderList(getTabLabel(profile, 'messages', 'Messages'), getTabListItems('messages', state, profile), 'No clues or messages yet.');
+    if (tab === 'events') return renderList(getTabLabel(profile, 'events', 'Events'), getTabListItems('events', state, profile), 'No events recorded yet.');
+    if (tab === 'inventory') return renderList(getTabLabel(profile, 'inventory', 'Inventory'), getTabListItems('inventory', state, profile), 'No resources recorded yet.');
+    return renderSettings(state, story);
+};
+
+renderSettings = function (state, story) {
+    const stContext = { ...createDefaultStContext(), ...(state.st_context ?? {}) };
+    const avatarUrl = stContext.avatar_url || '';
+    const chats = avatarUrl ? (stCharacterChats.get(avatarUrl) ?? []) : [];
+    const isLoadingChats = avatarUrl && stCharacterChatsLoading.has(avatarUrl);
+    const selectedWorlds = new Set(Array.isArray(stContext.world_info_names) ? stContext.world_info_names : []);
+
+    if (avatarUrl && !stCharacterChats.has(avatarUrl) && !stCharacterChatsLoading.has(avatarUrl)) {
+        loadCharacterChats(avatarUrl).then(() => render()).catch(() => null);
+    }
+
+    qs('#dd_content').innerHTML = `
+        <section class="dd-card">
+            <h2>Settings</h2>
+            <div class="dd-list">
+                <button id="dd_reset_story" class="dd-story-choice">Choose another story</button>
+                <button id="dd_end_story" class="dd-story-choice">Generate ending</button>
+                <button id="dd_clear_local" class="dd-story-choice">Clear local state</button>
+            </div>
+            ${provider.configured ? '' : '<div class="dd-error" style="margin-top:12px;">No DayDream model is available yet.</div>'}
+            <div class="dd-empty" style="margin-top:12px;">${escapeHtml(story?.title || 'No active story')}</div>
+        </section>
+        <section class="dd-card" style="margin-top:14px;">
+            <h2>SillyTavern Backend</h2>
+            ${sillyTavern.available ? `
+                <div class="dd-settings-form">
+                    <label for="dd_st_character">Character card</label>
+                    <select id="dd_st_character">
+                        <option value="">None</option>
+                        ${(sillyTavern.characters ?? []).map(character => `
+                            <option value="${escapeHtml(character.avatar_url)}" ${character.avatar_url === avatarUrl ? 'selected' : ''}>
+                                ${escapeHtml(character.name)}
+                            </option>
+                        `).join('')}
+                    </select>
+
+                    <label for="dd_st_chat">Chat history</label>
+                    <select id="dd_st_chat" ${avatarUrl ? '' : 'disabled'}>
+                        <option value="">${isLoadingChats ? 'Loading chats...' : 'Create or use current DayDream chat'}</option>
+                        ${chats.map(chat => `
+                            <option value="${escapeHtml(chat.file_id || chat.file_name || '')}" ${(chat.file_id || chat.file_name || '') === stContext.chat_name ? 'selected' : ''}>
+                                ${escapeHtml(chat.file_id || chat.file_name || '')}
+                            </option>
+                        `).join('')}
+                    </select>
+
+                    <label for="dd_st_worlds">World Info</label>
+                    <select id="dd_st_worlds" multiple size="${Math.min(Math.max((sillyTavern.world_names ?? []).length, 3), 8)}">
+                        ${(sillyTavern.world_names ?? []).map(worldName => `
+                            <option value="${escapeHtml(worldName)}" ${selectedWorlds.has(worldName) ? 'selected' : ''}>
+                                ${escapeHtml(worldName)}
+                            </option>
+                        `).join('')}
+                    </select>
+
+                    <label for="dd_st_system_prompt">System prompt override</label>
+                    <textarea id="dd_st_system_prompt" rows="4" placeholder="Optional">${escapeHtml(stContext.system_prompt || '')}</textarea>
+
+                    <label for="dd_st_author_note">Author's Note override</label>
+                    <textarea id="dd_st_author_note" rows="4" placeholder="Optional">${escapeHtml(stContext.author_note || '')}</textarea>
+
+                    <div class="dd-settings-actions">
+                        <button id="dd_save_st_bindings" class="dd-primary">Save ST bindings</button>
+                        <button id="dd_clear_st_bindings">Clear ST bindings</button>
+                    </div>
+
+                    <div class="dd-hint">
+                        DayDream keeps the frontend. SillyTavern handles character card, chat history, world info, system prompt, and note injection behind the scenes.
+                    </div>
+                </div>
+            ` : `
+                <div class="dd-empty">Log in to use SillyTavern-backed character cards, chat history, and world info from DayDream.</div>
+            `}
+        </section>
+    `;
+
+    qs('#dd_reset_story').addEventListener('click', showSetup);
+    qs('#dd_end_story').addEventListener('click', () => sendAction('结束'));
+    qs('#dd_clear_local').addEventListener('click', () => {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(HISTORY_KEY);
+        render();
+    });
+
+    if (!sillyTavern.available) {
+        return;
+    }
+
+    qs('#dd_st_character')?.addEventListener('change', async (event) => {
+        const nextState = loadState();
+        nextState.st_context = {
+            ...createDefaultStContext(),
+            ...(nextState.st_context ?? {}),
+            avatar_url: event.target.value || '',
+            chat_name: '',
+        };
+        saveState(nextState);
+        if (event.target.value) {
+            await loadCharacterChats(event.target.value);
+        }
+        render();
+    });
+
+    qs('#dd_save_st_bindings')?.addEventListener('click', async () => {
+        const nextState = loadState();
+        nextState.st_context = {
+            ...createDefaultStContext(),
+            ...(nextState.st_context ?? {}),
+            avatar_url: qs('#dd_st_character')?.value || '',
+            chat_name: qs('#dd_st_chat')?.value || '',
+            world_info_names: Array.from(qs('#dd_st_worlds')?.selectedOptions ?? []).map(option => option.value).filter(Boolean),
+            system_prompt: qs('#dd_st_system_prompt')?.value?.trim() || '',
+            author_note: qs('#dd_st_author_note')?.value?.trim() || '',
+        };
+        saveState(nextState);
+        await syncSession(nextState);
+        render();
+    });
+
+    qs('#dd_clear_st_bindings')?.addEventListener('click', async () => {
+        const nextState = loadState();
+        nextState.st_context = createDefaultStContext();
+        saveState(nextState);
+        await syncSession(nextState);
+        render();
+    });
+};
+
+sendAction = async function (text) {
+    const message = String(text ?? '').trim();
+    if (!message) return;
+
+    const state = loadState();
+    const story = getStory(state);
+    const profile = getProfile(story);
+    if (isGenerating) {
+        pendingAction = message;
+        qs('#dd_custom_action').value = '';
+        renderPendingOption();
+        showQueuedActionPopup();
+        return;
+    }
+    if (!story) {
+        showSetup();
+        return;
+    }
+
+    if (!provider.configured) {
+        renderError('No model is configured for DayDream yet.');
+        return;
+    }
+
+    qs('#dd_custom_action').value = '';
+    hideQueuedActionPopup();
+    isGenerating = true;
+    qs('#daydream_public_app').classList.add('dd-loading');
+    if (activeTab === 'story') renderStreamingReply(story, '');
+
+    let completed = false;
+    try {
+        const history = loadHistory();
+        const response = await fetch('/api/daydream/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'text/event-stream',
+                'X-CSRF-Token': csrfToken,
+            },
+            body: JSON.stringify({
+                session_id: state.session_id,
+                st_context: state.st_context ?? {},
+                story,
+                state,
+                message,
+                history,
+            }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Generation failed.');
+        }
+
+        const sessionId = response.headers.get('x-daydream-session-id');
+        if (sessionId) {
+            state.session_id = sessionId;
+        }
+
+        let lastPaint = 0;
+        const data = await readDayDreamStream(response, (streamText) => {
+            const now = Date.now();
+            if (now - lastPaint < 50) return;
+            lastPaint = now;
+            if (activeTab === 'story') renderStreamingReply(story, streamText);
+        });
+
+        const scene = parseReply(data.text);
+        state.last_scene = {
+            title: scene.title || story.title || 'Story Progress',
+            screen: scene.screen,
+            plot: scene.plot,
+        };
+        state.last_status_text = scene.status;
+        state.last_options = scene.options;
+        state.near_ending = scene.isEnding;
+        state.stats.turn_count = Number(state.stats.turn_count || 0) + (scene.isEnding ? 0 : 1);
+        if (scene.meta) {
+            applyMetaUpdates(state, scene.meta, profile);
+        } else {
+            applyStatusText(state, scene.status);
+            if (scene.status) state.triggered_events = [scene.status, ...(state.triggered_events ?? [])].slice(0, 20);
+            syncDerivedStats(state, profile);
+        }
+
+        const nextHistory = [...history, { role: 'user', content: message }, { role: 'assistant', content: stripDayDreamMeta(data.text) || scene.plot }];
+        saveHistory(nextHistory);
+
+        const remoteSession = state.session_id ? await fetchSession(state.session_id) : null;
+        if (remoteSession?.st_context) {
+            state.st_context = {
+                ...createDefaultStContext(),
+                ...(state.st_context ?? {}),
+                ...(remoteSession.st_context ?? {}),
+            };
+
+            if (state.st_context.avatar_url) {
+                await loadCharacterChats(state.st_context.avatar_url);
+            }
+        }
+
+        saveState(state);
+        await syncSession(state, nextHistory).catch(() => null);
+        if (activeTab === 'story') render();
+        else renderShell(profile, state);
+        completed = true;
+    } catch (error) {
+        pendingAction = '';
+        hideQueuedActionPopup();
+        renderError(error.message || 'Generation failed.');
+    } finally {
+        isGenerating = false;
+        qs('#daydream_public_app').classList.remove('dd-loading');
+        if (completed && pendingAction) {
+            const action = pendingAction;
+            pendingAction = '';
+            sendAction(action);
+        }
+    }
+};
 
 qs('#dd_open_setup').addEventListener('click', showSetup);
 qs('#dd_send_action').addEventListener('click', () => selectAction(qs('#dd_custom_action').value));
