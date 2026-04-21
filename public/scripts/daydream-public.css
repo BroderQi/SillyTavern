@@ -569,6 +569,14 @@ button {
     justify-self: start;
 }
 
+.dd-detail > .dd-text-button {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    width: fit-content;
+    box-shadow: 0 8px 18px rgba(38, 52, 47, 0.10);
+}
+
 .dd-category {
     display: grid;
     gap: 10px;
