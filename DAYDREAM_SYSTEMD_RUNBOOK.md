@@ -10,6 +10,12 @@ systemctl reload nginx
 systemctl restart daydream-sillytavern
 curl -I https://bkgf.net/ | grep -i referrer-policy
 
+如果仍然显示 `referrer-policy: no-referrer`，说明线上实际生效的配置仍在透传上游响应头，或请求命中了其他 server/location。检查 Nginx 最终加载配置：
+
+```bash
+nginx -T | grep -i -C 3 "referrer-policy\|server_name bkgf"
+```
+
 
 这份文档用于服务器正式部署。目标是让 SillyTavern/DayDream 在后台常驻运行，并在服务器重启后自动恢复。
 
