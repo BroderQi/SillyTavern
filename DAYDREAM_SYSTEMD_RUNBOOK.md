@@ -8,6 +8,7 @@ cp /opt/SillyTavern/deploy/nginx/bkgf-daydream.conf /etc/nginx/conf.d/bkgf-daydr
 nginx -t
 systemctl reload nginx
 systemctl restart daydream-sillytavern
+curl -I https://bkgf.net/ | grep -i referrer-policy
 
 
 这份文档用于服务器正式部署。目标是让 SillyTavern/DayDream 在后台常驻运行，并在服务器重启后自动恢复。
@@ -180,6 +181,7 @@ systemctl reload nginx
 ```bash
 curl -I https://bkgf.net/
 curl -I https://bkgf.net/daydream
+curl -I https://bkgf.net/ | grep -i referrer-policy
 curl -I https://bkgf.net/api/settings/get
 ```
 
@@ -188,6 +190,7 @@ curl -I https://bkgf.net/api/settings/get
 ```text
 https://bkgf.net/                 200
 https://bkgf.net/daydream         200
+referrer-policy: origin
 https://bkgf.net/api/settings/get 404
 ```
 
@@ -219,6 +222,7 @@ systemctl reload nginx
 
 ```bash
 curl -I https://bkgf.net/
+curl -I https://bkgf.net/ | grep -i referrer-policy
 curl -I https://bkgf.net/api/settings/get
 ```
 
