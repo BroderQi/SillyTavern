@@ -4,7 +4,7 @@
 cd /opt/SillyTavern
 git pull
 
-cat /opt/SillyTavern/deploy/nginx/bkgf-DayDreamer.conf > /etc/nginx/conf.d/bkgf-DayDreamer.conf
+cat /opt/SillyTavern/deploy/nginx/bkgf-DayDream.conf > /etc/nginx/conf.d/bkgf-DayDream.conf
 nginx -t && systemctl reload nginx
 systemctl restart DayDreamer-sillytavern
 curl -I https://bkgf.net/ | grep -i referrer-policy
