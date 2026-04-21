@@ -6,26 +6,26 @@ import fetch from 'node-fetch';
 
 import { serverDirectory } from '../server-directory.js';
 import { forwardFetchResponse, getConfigValue, safeReadFileSync } from '../util.js';
-import { readInternalJson } from '../daydream-st/internal-api.js';
+import { readInternalJson } from '../DayDreamer-st/internal-api.js';
 import {
     listSillyTavernResources,
-    assembleDayDreamGeneration,
+    assembleDayDreamerGeneration,
     getProviderSummaryFromSettings,
-    persistDayDreamTurn,
+    persistDayDreamerTurn,
     readUserSettings,
-} from '../daydream-st/orchestration.js';
-import { dispatchViaSillyTavern } from '../daydream-st/provider-dispatch.js';
-import { createSession, loadSession, saveSession, upsertSession } from '../daydream-st/session-store.js';
-import { proxyEventStream } from '../daydream-st/streaming.js';
+} from '../DayDreamer-st/orchestration.js';
+import { dispatchViaSillyTavern } from '../DayDreamer-st/provider-dispatch.js';
+import { createSession, loadSession, saveSession, upsertSession } from '../DayDreamer-st/session-store.js';
+import { proxyEventStream } from '../DayDreamer-st/streaming.js';
 
 export const router = express.Router();
 
-const DAYDREAM_DIR = path.join(serverDirectory, 'public', 'scripts', 'extensions', 'third-party', 'daydream');
-const STORIES_PATH = path.join(DAYDREAM_DIR, 'data', 'stories.json');
-const UI_PROFILES_PATH = path.join(DAYDREAM_DIR, 'data', 'ui-profiles.json');
-const CORE_PROMPT_PATH = path.join(DAYDREAM_DIR, 'prompts', 'engine-core.md');
-const TURN_PROMPT_PATH = path.join(DAYDREAM_DIR, 'prompts', 'turn-injection.md');
-const ENDING_PROMPT_PATH = path.join(DAYDREAM_DIR, 'prompts', 'ending.md');
+const DayDreamer_DIR = path.join(serverDirectory, 'public', 'scripts', 'extensions', 'third-party', 'DayDreamer');
+const STORIES_PATH = path.join(DayDreamer_DIR, 'data', 'stories.json');
+const UI_PROFILES_PATH = path.join(DayDreamer_DIR, 'data', 'ui-profiles.json');
+const CORE_PROMPT_PATH = path.join(DayDreamer_DIR, 'prompts', 'engine-core.md');
+const TURN_PROMPT_PATH = path.join(DayDreamer_DIR, 'prompts', 'turn-injection.md');
+const ENDING_PROMPT_PATH = path.join(DayDreamer_DIR, 'prompts', 'ending.md');
 
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const DEFAULT_MODEL = 'gpt-4o-mini';
@@ -35,7 +35,7 @@ function readJson(filePath, fallback) {
     try {
         return JSON.parse(fs.readFileSync(filePath, 'utf8'));
     } catch (error) {
-        console.error(`Failed to read DayDream JSON file: ${filePath}`, error);
+        console.error(`Failed to read DayDreamer JSON file: ${filePath}`, error);
         return fallback;
     }
 }
@@ -45,11 +45,11 @@ function readPrompt(filePath) {
 }
 
 function getFallbackProviderConfig() {
-    const apiKey = process.env.DAYDREAM_API_KEY || getConfigValue('daydream.apiKey', '');
-    const baseUrl = process.env.DAYDREAM_BASE_URL || getConfigValue('daydream.baseUrl', DEFAULT_BASE_URL);
-    const model = process.env.DAYDREAM_MODEL || getConfigValue('daydream.model', DEFAULT_MODEL);
-    const enabled = Boolean(apiKey) && getConfigValue('daydream.enabled', true, 'boolean');
-    const responseTokens = Number(process.env.DAYDREAM_RESPONSE_TOKENS || getConfigValue('daydream.responseTokens', 1200, 'number'));
+    const apiKey = process.env.DayDreamer_API_KEY || getConfigValue('DayDreamer.apiKey', '');
+    const baseUrl = process.env.DayDreamer_BASE_URL || getConfigValue('DayDreamer.baseUrl', DEFAULT_BASE_URL);
+    const model = process.env.DayDreamer_MODEL || getConfigValue('DayDreamer.model', DEFAULT_MODEL);
+    const enabled = Boolean(apiKey) && getConfigValue('DayDreamer.enabled', true, 'boolean');
+    const responseTokens = Number(process.env.DayDreamer_RESPONSE_TOKENS || getConfigValue('DayDreamer.responseTokens', 1200, 'number'));
 
     return {
         configured: enabled,
@@ -143,10 +143,10 @@ function buildFallbackMessages({ body, story, uiProfiles, corePrompt, turnPrompt
     const systemPrompt = [
         corePrompt,
         '',
-        '[DayDream Current Story]',
+        '[DayDreamer Current Story]',
         JSON.stringify(story ?? {}, null, 2),
         '',
-        '[DayDream Current State]',
+        '[DayDreamer Current State]',
         JSON.stringify({
             story_title: story?.title ?? state.story_title ?? '',
             route: story?.route ?? state.route ?? 'general_story',
@@ -169,7 +169,7 @@ function buildFallbackMessages({ body, story, uiProfiles, corePrompt, turnPrompt
             visible_stats: visibleStats,
         }, null, 2),
         '',
-        '[DayDream Visible UI]',
+        '[DayDreamer Visible UI]',
         JSON.stringify({
             top_stats: visibleStats,
             tabs: getProductTabs(profile).map(tab => ({ key: tab.key, label: tab.label })),
@@ -184,7 +184,7 @@ function buildFallbackMessages({ body, story, uiProfiles, corePrompt, turnPrompt
         ...history
             .filter(item => item && ['user', 'assistant'].includes(item.role) && item.content)
             .map(item => ({ role: item.role, content: String(item.content).slice(0, MAX_MESSAGE_LENGTH) })),
-        { role: 'user', content: message || 'Begin the DayDream story.' },
+        { role: 'user', content: message || 'Begin the DayDreamer story.' },
     ];
 }
 
@@ -207,21 +207,21 @@ async function dispatchFallbackProvider(provider, messages, response) {
 
     if (!upstream.ok) {
         const errorText = await upstream.text();
-        console.error('DayDream fallback provider error:', upstream.status, errorText);
-        response.status(502).json({ error: 'DayDream provider request failed.' });
+        console.error('DayDreamer fallback provider error:', upstream.status, errorText);
+        response.status(502).json({ error: 'DayDreamer provider request failed.' });
         return null;
     }
 
     response.setHeader('Content-Type', upstream.headers.get('content-type') || 'text/event-stream; charset=utf-8');
     response.setHeader('Cache-Control', 'no-cache, no-transform');
     response.setHeader('X-Accel-Buffering', 'no');
-    response.setHeader('X-DayDream-Model', provider.model);
+    response.setHeader('X-DayDreamer-Model', provider.model);
     return upstream;
 }
 
 function requireSessionSupport(request, response) {
     if (!request.user?.directories) {
-        response.status(403).json({ error: 'DayDream server sessions require a SillyTavern user context.' });
+        response.status(403).json({ error: 'DayDreamer server sessions require a SillyTavern user context.' });
         return false;
     }
 
@@ -257,7 +257,7 @@ router.post('/st/chats', async (request, response) => {
         });
         return response.json(Array.isArray(chats) ? chats : []);
     } catch (error) {
-        console.error('Failed to list DayDream character chats:', error);
+        console.error('Failed to list DayDreamer character chats:', error);
         return response.status(500).json({ error: 'Failed to list SillyTavern chats.' });
     }
 });
@@ -283,7 +283,7 @@ router.post('/session/get', (request, response) => {
 
     const session = loadSession(request.user.directories, request.body?.session_id);
     if (!session) {
-        return response.status(404).json({ error: 'DayDream session not found.' });
+        return response.status(404).json({ error: 'DayDreamer session not found.' });
     }
 
     response.json(session);
@@ -296,7 +296,7 @@ router.post('/session/load', (request, response) => {
 
     const session = loadSession(request.user.directories, request.body?.session_id);
     if (!session) {
-        return response.status(404).json({ error: 'DayDream session not found.' });
+        return response.status(404).json({ error: 'DayDreamer session not found.' });
     }
 
     response.json(session);
@@ -324,7 +324,7 @@ router.post('/generate', async (request, response) => {
     const story = getStoryFromRequest(stories, body);
 
     if (!story && !body.state?.custom_story) {
-        return response.status(400).json({ error: 'No DayDream story was provided.' });
+        return response.status(400).json({ error: 'No DayDreamer story was provided.' });
     }
 
     const corePrompt = readPrompt(CORE_PROMPT_PATH);
@@ -339,11 +339,11 @@ router.post('/generate', async (request, response) => {
                 state: body.state ?? {},
                 history: [],
             });
-            response.setHeader('X-DayDream-Session-Id', session.session_id);
+            response.setHeader('X-DayDreamer-Session-Id', session.session_id);
         }
 
         if (request.user?.directories) {
-            const generation = await assembleDayDreamGeneration(request, body, session, {
+            const generation = await assembleDayDreamerGeneration(request, body, session, {
                 story,
                 uiProfiles,
                 corePrompt,
@@ -372,13 +372,13 @@ router.post('/generate', async (request, response) => {
 
             if (!upstream.ok) {
                 const errorText = await upstream.text().catch(() => '');
-                console.error('DayDream ST dispatch failed:', upstream.status, errorText);
-                return response.status(502).json({ error: 'DayDream SillyTavern dispatch failed.' });
+                console.error('DayDreamer ST dispatch failed:', upstream.status, errorText);
+                return response.status(502).json({ error: 'DayDreamer SillyTavern dispatch failed.' });
             }
 
-            response.setHeader('X-DayDream-Model', generation.resolvedProvider.model || fallbackProvider.model);
+            response.setHeader('X-DayDreamer-Model', generation.resolvedProvider.model || fallbackProvider.model);
             if (session?.session_id) {
-                response.setHeader('X-DayDream-Session-Id', session.session_id);
+                response.setHeader('X-DayDreamer-Session-Id', session.session_id);
             }
             return await proxyEventStream(upstream, response, {
                 onComplete: async ({ text }) => {
@@ -387,7 +387,7 @@ router.post('/generate', async (request, response) => {
                     }
 
                     try {
-                        const persisted = await persistDayDreamTurn(
+                        const persisted = await persistDayDreamerTurn(
                             request,
                             session,
                             { ...body, story },
@@ -413,7 +413,7 @@ router.post('/generate', async (request, response) => {
                             provider_source: generation.resolvedProvider.chat_completion_source ?? persisted.provider_source,
                         });
                     } catch (error) {
-                        console.error('Failed to persist DayDream lightweight session metadata:', error);
+                        console.error('Failed to persist DayDreamer lightweight session metadata:', error);
                     }
                 },
             });
@@ -421,7 +421,7 @@ router.post('/generate', async (request, response) => {
 
         if (!fallbackProvider.enabled) {
             return response.status(503).json({
-                error: 'DayDream generation is not configured. Log in to use SillyTavern-backed generation or set DAYDREAM_API_KEY as a fallback.',
+                error: 'DayDreamer generation is not configured. Log in to use SillyTavern-backed generation or set DayDreamer_API_KEY as a fallback.',
             });
         }
 
@@ -433,10 +433,10 @@ router.post('/generate', async (request, response) => {
 
         return forwardFetchResponse(upstream, response);
     } catch (error) {
-        console.error('DayDream generation failed:', error);
+        console.error('DayDreamer generation failed:', error);
         if (response.headersSent) {
             return response.end();
         }
-        return response.status(500).json({ error: 'DayDream generation failed.' });
+        return response.status(500).json({ error: 'DayDreamer generation failed.' });
     }
 });

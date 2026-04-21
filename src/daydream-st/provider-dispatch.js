@@ -79,7 +79,7 @@ export async function streamCompletionToResponse(upstream, response, { headers =
         if (!response.writableEnded) {
             response.end();
         }
-        const emptyResult = { text: '', model: upstream.headers.get('x-daydream-model') || '' };
+        const emptyResult = { text: '', model: upstream.headers.get('x-DayDreamer-model') || '' };
         if (typeof onComplete === 'function') {
             await onComplete(emptyResult);
         }
@@ -90,7 +90,7 @@ export async function streamCompletionToResponse(upstream, response, { headers =
         let sseBuffer = '';
         let rawBody = '';
         let fullText = '';
-        let model = upstream.headers.get('x-daydream-model') || '';
+        let model = upstream.headers.get('x-DayDreamer-model') || '';
 
         const finish = async () => {
             if (!isSse && rawBody) {

@@ -1,7 +1,7 @@
 import EventSourceStream from './sse-core-stream.js';
 
-const STORAGE_KEY = 'daydream_public_state_v1';
-const HISTORY_KEY = 'daydream_public_history_v1';
+const STORAGE_KEY = 'DayDreamer_public_state_v1';
+const HISTORY_KEY = 'DayDreamer_public_history_v1';
 const MAX_VISIBLE_HISTORY = 0;
 
 const FILTER_DIMENSIONS = [
@@ -163,7 +163,7 @@ async function fetchSession(sessionId) {
         return null;
     }
 
-    const response = await fetch('/api/daydream/session/get', {
+    const response = await fetch('/api/DayDreamer/session/get', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -218,7 +218,7 @@ async function syncSession(state, history = []) {
         return null;
     }
 
-    const response = await fetch('/api/daydream/session/save', {
+    const response = await fetch('/api/DayDreamer/session/save', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -285,7 +285,7 @@ let getProfile = function (story) {
 
 let bootstrap = async function () {
     const [boot, csrf] = await Promise.all([
-        fetch('/api/daydream/bootstrap').then(r => r.json()),
+        fetch('/api/DayDreamer/bootstrap').then(r => r.json()),
         fetch('/csrf-token').then(r => r.json()),
     ]);
     stories = boot.stories ?? [];
@@ -300,7 +300,7 @@ function render() {
     const profile = getProfile(story);
     if (syncDerivedStats(state, profile)) saveState(state);
 
-    qs('#dd_story_title').textContent = story?.title || 'DayDream';
+    qs('#dd_story_title').textContent = story?.title || 'DayDreamer';
     qs('#dd_story_class').textContent = story?.story_class || '世界引擎';
 
     renderStats(profile, state);
@@ -877,7 +877,7 @@ let renderSettings = function (story) {
                 <button id="dd_end_story" class="dd-story-choice">生成结局</button>
                 <button id="dd_clear_local" class="dd-story-choice">清空本地存档</button>
             </div>
-            ${provider.configured ? '' : '<div class="dd-error" style="margin-top:12px;">服务器尚未配置 DayDream 模型。</div>'}
+            ${provider.configured ? '' : '<div class="dd-error" style="margin-top:12px;">服务器尚未配置 DayDreamer 模型。</div>'}
             <div class="dd-empty" style="margin-top:12px;">${escapeHtml(story?.title || '未选择故事')}</div>
         </section>
     `;
@@ -1005,7 +1005,7 @@ function renderCustomPicker() {
         saveHistory([]);
         hideSetup();
         render();
-        sendAction(`开始自定义 DayDream 故事：${text}`);
+        sendAction(`开始自定义 DayDreamer 故事：${text}`);
     });
 }
 
@@ -1024,26 +1024,26 @@ function startStory(story) {
     saveHistory([]);
     hideSetup();
     render();
-    sendAction(`开始 DayDream 预设故事《${story.title}》。角色姓名：${state.character.name || '未命名'}。角色性别：${state.character.gender}。请根据当前剧本生成第一幕，直接进入事件现场。`);
+    sendAction(`开始 DayDreamer 预设故事《${story.title}》。角色姓名：${state.character.name || '未命名'}。角色性别：${state.character.gender}。请根据当前剧本生成第一幕，直接进入事件现场。`);
 }
 
 function getSection(text, label) {
     return String(text ?? '').match(new RegExp(`【${label}】([\\s\\S]*?)(?=\\n?【[^】]+】|$)`))?.[1]?.trim() ?? '';
 }
 
-function stripDayDreamMeta(text) {
+function stripDayDreamerMeta(text) {
     return String(text ?? '')
-        .replace(/<!--\s*DAYDREAM_META[\s\S]*?-->/gi, '')
-        .replace(/<!--\s*DAYDREAM_META[\s\S]*$/i, '')
-        .replace(/<daydream_meta\b[\s\S]*?<\/daydream_meta>/gi, '')
-        .replace(/<daydream_meta\b[\s\S]*$/i, '')
+        .replace(/<!--\s*DayDreamer_META[\s\S]*?-->/gi, '')
+        .replace(/<!--\s*DayDreamer_META[\s\S]*$/i, '')
+        .replace(/<DayDreamer_meta\b[\s\S]*?<\/DayDreamer_meta>/gi, '')
+        .replace(/<DayDreamer_meta\b[\s\S]*$/i, '')
         .trim();
 }
 
-function parseDayDreamMeta(text) {
+function parseDayDreamerMeta(text) {
     const source = String(text ?? '');
-    const raw = source.match(/<!--\s*DAYDREAM_META\s*([\s\S]*?)\s*-->/i)?.[1]?.trim()
-        ?? source.match(/<daydream_meta\b[^>]*>([\s\S]*?)<\/daydream_meta>/i)?.[1]?.trim();
+    const raw = source.match(/<!--\s*DayDreamer_META\s*([\s\S]*?)\s*-->/i)?.[1]?.trim()
+        ?? source.match(/<DayDreamer_meta\b[^>]*>([\s\S]*?)<\/DayDreamer_meta>/i)?.[1]?.trim();
     if (!raw) return null;
 
     try {
@@ -1106,7 +1106,7 @@ function formatStatusChanges(meta, fallback) {
 }
 
 function parseVisibleScene(text) {
-    const visibleText = stripDayDreamMeta(text);
+    const visibleText = stripDayDreamerMeta(text);
     const hasStructuredLabels = /【(?:标题|环境|画面|剧情|选项|行动选项|结局)】/.test(visibleText);
     return {
         title: getSection(visibleText, '标题'),
@@ -1117,10 +1117,10 @@ function parseVisibleScene(text) {
 }
 
 function parseReply(text) {
-    const meta = parseDayDreamMeta(text);
+    const meta = parseDayDreamerMeta(text);
     const ending = getSection(text, '结局');
     if (ending || meta?.is_ending) {
-        const visibleEnding = ending || stripDayDreamMeta(text);
+        const visibleEnding = ending || stripDayDreamerMeta(text);
         return {
             title: getSection(text, '标题') || meta?.title || '结局',
             screen: getSection(text, '环境') || getSection(text, '画面') || meta?.screen || '',
@@ -1132,7 +1132,7 @@ function parseReply(text) {
         };
     }
 
-    const visibleText = stripDayDreamMeta(text);
+    const visibleText = stripDayDreamerMeta(text);
     const legacyPlot = getSection(text, '剧情');
     const plot = legacyPlot || visibleText || text;
     return {
@@ -1256,7 +1256,7 @@ function renderStreamingReply(story, text) {
             <div class="dd-kicker">${escapeHtml(story?.story_class || '生成中')}</div>
             ${scene.title ? `<h2>${escapeHtml(scene.title)}</h2>` : ''}
             ${scene.screen ? `<div class="dd-screen">${formatText(scene.screen)}</div>` : ''}
-            ${scene.plot ? `<div class="dd-plot">${formatText(scene.plot)}</div>` : '<div class="dd-empty">DayDream 正在生成下一幕...</div>'}
+            ${scene.plot ? `<div class="dd-plot">${formatText(scene.plot)}</div>` : '<div class="dd-empty">DayDreamer 正在生成下一幕...</div>'}
         </section>
         ${optionHtml}
         ${renderPendingAction()}
@@ -1267,7 +1267,7 @@ function renderStreamingReply(story, text) {
     });
 }
 
-async function readDayDreamStream(response, onDelta) {
+async function readDayDreamerStream(response, onDelta) {
     const contentType = response.headers.get('content-type') ?? '';
     if (!response.body || !contentType.includes('text/event-stream')) {
         const data = await response.json();
@@ -1281,7 +1281,7 @@ async function readDayDreamStream(response, onDelta) {
     response.body.pipeThrough(eventStream);
     const reader = eventStream.readable.getReader();
     let fullText = '';
-    let model = response.headers.get('x-daydream-model') || '';
+    let model = response.headers.get('x-DayDreamer-model') || '';
 
     while (true) {
         const { value, done } = await reader.read();
@@ -1327,19 +1327,19 @@ let sendAction = async function (text) {
     }
 
     if (!provider.configured) {
-        renderError('服务器尚未配置 DayDream 模型。请让管理员设置 DAYDREAM_API_KEY。');
+        renderError('服务器尚未配置 DayDreamer 模型。请让管理员设置 DayDreamer_API_KEY。');
         return;
     }
 
     qs('#dd_custom_action').value = '';
     hideQueuedActionPopup();
     isGenerating = true;
-    qs('#daydream_public_app').classList.add('dd-loading');
+    qs('#DayDreamer_public_app').classList.add('dd-loading');
     if (activeTab === 'story') renderStreamingReply(story, '');
 
     let completed = false;
     try {
-        const response = await fetch('/api/daydream/generate', {
+        const response = await fetch('/api/DayDreamer/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1360,12 +1360,12 @@ let sendAction = async function (text) {
             throw new Error(errorData.error || '生成失败');
         }
 
-        const sessionId = response.headers.get('x-daydream-session-id');
+        const sessionId = response.headers.get('x-DayDreamer-session-id');
         if (sessionId) {
             state.session_id = sessionId;
         }
         let lastPaint = 0;
-        const data = await readDayDreamStream(response, (streamText) => {
+        const data = await readDayDreamerStream(response, (streamText) => {
             const now = Date.now();
             if (now - lastPaint < 50) return;
             lastPaint = now;
@@ -1403,7 +1403,7 @@ let sendAction = async function (text) {
         renderError(error.message || '生成失败');
     } finally {
         isGenerating = false;
-        qs('#daydream_public_app').classList.remove('dd-loading');
+        qs('#DayDreamer_public_app').classList.remove('dd-loading');
         if (completed && pendingAction) {
             const action = pendingAction;
             pendingAction = '';
@@ -1429,7 +1429,7 @@ getProfile = function (story) {
 
 bootstrap = async function () {
     const [boot, csrf] = await Promise.all([
-        fetch('/api/daydream/bootstrap').then(r => r.json()),
+        fetch('/api/DayDreamer/bootstrap').then(r => r.json()),
         fetch('/csrf-token').then(r => r.json()),
     ]);
 
@@ -1494,19 +1494,19 @@ sendAction = async function (text) {
     }
 
     if (!provider.configured) {
-        renderError('No model is configured for DayDream yet.');
+        renderError('No model is configured for DayDreamer yet.');
         return;
     }
 
     qs('#dd_custom_action').value = '';
     hideQueuedActionPopup();
     isGenerating = true;
-    qs('#daydream_public_app').classList.add('dd-loading');
+    qs('#DayDreamer_public_app').classList.add('dd-loading');
     if (activeTab === 'story') renderStreamingReply(story, '');
 
     let completed = false;
     try {
-        const response = await fetch('/api/daydream/generate', {
+        const response = await fetch('/api/DayDreamer/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1527,13 +1527,13 @@ sendAction = async function (text) {
             throw new Error(errorData.error || 'Generation failed.');
         }
 
-        const sessionId = response.headers.get('x-daydream-session-id');
+        const sessionId = response.headers.get('x-DayDreamer-session-id');
         if (sessionId) {
             state.session_id = sessionId;
         }
 
         let lastPaint = 0;
-        const data = await readDayDreamStream(response, (streamText) => {
+        const data = await readDayDreamerStream(response, (streamText) => {
             const now = Date.now();
             if (now - lastPaint < 50) return;
             lastPaint = now;
@@ -1571,7 +1571,7 @@ sendAction = async function (text) {
         renderError(error.message || 'Generation failed.');
     } finally {
         isGenerating = false;
-        qs('#daydream_public_app').classList.remove('dd-loading');
+        qs('#DayDreamer_public_app').classList.remove('dd-loading');
         if (completed && pendingAction) {
             const action = pendingAction;
             pendingAction = '';
@@ -1593,5 +1593,5 @@ try {
     await bootstrap();
     render();
 } catch (error) {
-    renderError(`DayDream 启动失败：${error.message}`);
+    renderError(`DayDreamer 启动失败：${error.message}`);
 }

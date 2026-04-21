@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-const SESSIONS_DIR_NAME = 'daydream-sessions';
+const SESSIONS_DIR_NAME = 'DayDreamer-sessions';
 const SESSION_ID_PATTERN = /^[a-z0-9-]{8,128}$/i;
 
 function getSessionsDirectory(directories) {
@@ -86,14 +86,14 @@ export function loadSession(directories, sessionId) {
         const parsed = JSON.parse(text);
         return createDefaultSession(sessionId, parsed);
     } catch (error) {
-        console.error(`Failed to read DayDream session ${sessionId}:`, error);
+        console.error(`Failed to read DayDreamer session ${sessionId}:`, error);
         return null;
     }
 }
 
 export function saveSession(directories, session) {
     if (!session || !isValidSessionId(session.session_id)) {
-        throw new Error('Invalid DayDream session payload.');
+        throw new Error('Invalid DayDreamer session payload.');
     }
 
     const normalized = createDefaultSession(session.session_id, {

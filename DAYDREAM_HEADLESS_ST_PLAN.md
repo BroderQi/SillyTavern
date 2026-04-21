@@ -1,21 +1,21 @@
-# DayDream Headless SillyTavern Plan
+# DayDreamer Headless SillyTavern Plan
 
 ## Goal
 
 Build a product architecture where:
 
-- DayDream owns the entire user-facing experience.
+- DayDreamer owns the entire user-facing experience.
 - SillyTavern becomes a hidden orchestration backend.
-- DayDream no longer calls upstream model providers directly.
-- DayDream generation first enters a reusable SillyTavern prompt assembly pipeline, then uses existing SillyTavern backend provider adapters.
+- DayDreamer no longer calls upstream model providers directly.
+- DayDreamer generation first enters a reusable SillyTavern prompt assembly pipeline, then uses existing SillyTavern backend provider adapters.
 
 In one sentence:
 
-**DayDream takes over the frontend, SillyTavern moves behind the curtain.**
+**DayDreamer takes over the frontend, SillyTavern moves behind the curtain.**
 
 ## Product Outcome
 
-If this plan is completed, DayDream can keep its custom mobile-style UI while gaining controlled access to SillyTavern-native capabilities such as:
+If this plan is completed, DayDreamer can keep its custom mobile-style UI while gaining controlled access to SillyTavern-native capabilities such as:
 
 - character card fields
 - chat history persistence
@@ -31,17 +31,17 @@ The user should not need to see the native SillyTavern UI.
 
 ## Current State
 
-### What DayDream already has
+### What DayDreamer already has
 
-- A standalone public page at `/daydream` served by [src/server-main.js](./src/server-main.js:217)
-- A custom frontend in [public/daydream.html](./public/daydream.html:19), [public/scripts/daydream-public.js](./public/scripts/daydream-public.js:182), and [public/scripts/daydream-public.css](./public/scripts/daydream-public.css:1)
-- A custom backend endpoint in [src/endpoints/daydream.js](./src/endpoints/daydream.js:215)
-- A complete DayDream-specific gameplay layer:
+- A standalone public page at `/DayDreamer` served by [src/server-main.js](./src/server-main.js:217)
+- A custom frontend in [public/DayDreamer.html](./public/DayDreamer.html:19), [public/scripts/DayDreamer-public.js](./public/scripts/DayDreamer-public.js:182), and [public/scripts/DayDreamer-public.css](./public/scripts/DayDreamer-public.css:1)
+- A custom backend endpoint in [src/endpoints/DayDreamer.js](./src/endpoints/DayDreamer.js:215)
+- A complete DayDreamer-specific gameplay layer:
   - story selection
   - state tracking
   - option parsing
-  - `DAYDREAM_META` parsing
-  - top stats and bottom tabs from [public/scripts/extensions/third-party/daydream/data/ui-profiles.json](./public/scripts/extensions/third-party/daydream/data/ui-profiles.json:3)
+  - `DayDreamer_META` parsing
+  - top stats and bottom tabs from [public/scripts/extensions/third-party/DayDreamer/data/ui-profiles.json](./public/scripts/extensions/third-party/DayDreamer/data/ui-profiles.json:3)
 
 ### What SillyTavern already has
 
@@ -75,15 +75,15 @@ This means the target architecture is achievable, but not by simply changing one
 
 ### Decision
 
-Do **not** rebuild DayDream orchestration from scratch.
+Do **not** rebuild DayDreamer orchestration from scratch.
 
-Do **not** try to make the DayDream public page emulate the full native SillyTavern frontend.
+Do **not** try to make the DayDreamer public page emulate the full native SillyTavern frontend.
 
 Instead:
 
 1. Extract or wrap the reusable SillyTavern prompt assembly logic into a new shared orchestration layer.
-2. Keep DayDream's current public UI as the only user-facing application.
-3. Make the DayDream backend call the shared orchestration layer.
+2. Keep DayDreamer's current public UI as the only user-facing application.
+3. Make the DayDreamer backend call the shared orchestration layer.
 4. Reuse existing SillyTavern backend provider adapters for the final upstream request.
 
 ### Design Principle
@@ -104,11 +104,11 @@ These can be reused with minimal change:
 - provider adapters in [src/endpoints/backends/chat-completions.js](./src/endpoints/backends/chat-completions.js:2016)
 - persistent storage formats for characters, chats, settings, and world info
 - server routes and server boot chain in [src/server-main.js](./src/server-main.js:1) and [src/server-startup.js](./src/server-startup.js:141)
-- DayDream's current custom frontend and state model
+- DayDreamer's current custom frontend and state model
 
 ### Reuse by wrapping
 
-These should be wrapped behind a DayDream server-facing orchestration API:
+These should be wrapped behind a DayDreamer server-facing orchestration API:
 
 - character loading and selection
 - chat loading and saving
@@ -140,34 +140,34 @@ These should not block v1:
 
 ### V1 supported capabilities
 
-- custom DayDream public UI only
+- custom DayDreamer public UI only
 - SillyTavern-backed model generation
-- DayDream-native people/relationship cards, editable by the user
-- DayDream-native editable world book entries generated from `DAYDREAM_META`
+- DayDreamer-native people/relationship cards, editable by the user
+- DayDreamer-native editable world book entries generated from `DayDreamer_META`
 - lightweight session state persistence, without full chat transcript persistence
 - hidden Author's Note injection
 - hidden system prompt support
 - instruct mode support where applicable
 - hidden provider preset and settings support
-- streaming back to DayDream UI
+- streaming back to DayDreamer UI
 
 ### V1 intentionally limited
 
 - full chat history persistence is disabled in v1 to avoid memory/storage growth
-- ST role card, chat, world info, Author's Note, system prompt, and provider controls are not exposed in the DayDream UI
+- ST role card, chat, world info, Author's Note, system prompt, and provider controls are not exposed in the DayDreamer UI
 - slash commands only for internal/admin or disabled entirely
 - extension prompt support only for explicitly supported modules
 - macro support only where already covered by reused prompt assembly functions
 
 ### Product UI Scope
 
-DayDream exposes only product-level controls:
+DayDreamer exposes only product-level controls:
 
-- People: the relationship/person tab acts as DayDream's user-facing character card layer. Users can add, edit, and delete people.
-- World book: DayDream can generate durable world entries through `DAYDREAM_META.world_entries`; users can add, edit, delete, enable, and disable entries.
-- Settings: only DayDream actions are visible, such as restarting, ending, or clearing local state.
+- People: the relationship/person tab acts as DayDreamer's user-facing character card layer. Users can add, edit, and delete people.
+- World book: DayDreamer can generate durable world entries through `DayDreamer_META.world_entries`; users can add, edit, delete, enable, and disable entries.
+- Settings: only DayDreamer actions are visible, such as restarting, ending, or clearing local state.
 
-DayDream hides backend mechanics:
+DayDreamer hides backend mechanics:
 
 - full chat logs
 - ST chat selection
@@ -182,53 +182,53 @@ DayDream hides backend mechanics:
 
 ### User-facing flow
 
-1. User opens `/daydream`
-2. User selects story / role / action from DayDream UI
-3. DayDream frontend sends a structured generation request to `/api/daydream/generate`
-4. DayDream backend loads or creates a SillyTavern-backed session context
+1. User opens `/DayDreamer`
+2. User selects story / role / action from DayDreamer UI
+3. DayDreamer frontend sends a structured generation request to `/api/DayDreamer/generate`
+4. DayDreamer backend loads or creates a SillyTavern-backed session context
 5. Shared orchestration layer assembles the final prompt using SillyTavern rules
 6. Existing SillyTavern provider adapter sends the request upstream
-7. Streamed response is returned to DayDream frontend
-8. DayDream parses `DAYDREAM_META`, updates state, and optionally persists chat metadata
+7. Streamed response is returned to DayDreamer frontend
+8. DayDreamer parses `DayDreamer_META`, updates state, and optionally persists chat metadata
 
 ### Internal architecture
 
-- `public/daydream.html` and `public/scripts/daydream-public.js` remain the frontend
-- `src/endpoints/daydream.js` becomes an orchestration entrypoint instead of a direct provider proxy
+- `public/DayDreamer.html` and `public/scripts/DayDreamer-public.js` remain the frontend
+- `src/endpoints/DayDreamer.js` becomes an orchestration entrypoint instead of a direct provider proxy
 - new shared server-side orchestration modules are introduced under a new folder, recommended:
-  - `src/daydream-st/`
+  - `src/DayDreamer-st/`
 
 Recommended new modules:
 
-- `src/daydream-st/session-store.js`
-- `src/daydream-st/context-loader.js`
-- `src/daydream-st/orchestration.js`
-- `src/daydream-st/prompt-assembly.js`
-- `src/daydream-st/provider-dispatch.js`
+- `src/DayDreamer-st/session-store.js`
+- `src/DayDreamer-st/context-loader.js`
+- `src/DayDreamer-st/orchestration.js`
+- `src/DayDreamer-st/prompt-assembly.js`
+- `src/DayDreamer-st/provider-dispatch.js`
 
 ## Proposed Server-Side Session Model
 
-Each DayDream run should map to a SillyTavern-compatible session context.
+Each DayDreamer run should map to a SillyTavern-compatible session context.
 
 ### Minimum session fields
 
 - `session_id`
 - `story_id`
-- DayDream people records
+- DayDreamer people records
 - `chat_metadata`
-- DayDream world book entries
+- DayDreamer world book entries
 - hidden orchestration summary, when needed
 
 ### Recommendation
 
-Do not keep DayDream as localStorage-only state forever.
+Do not keep DayDreamer as localStorage-only state forever.
 
 Instead:
 
 - Keep UI responsiveness in local state if needed.
 - Persist canonical state on the server in SillyTavern-compatible storage.
 
-This allows DayDream to use:
+This allows DayDreamer to use:
 
 - resumable lightweight state
 - editable people and world book data
@@ -245,9 +245,9 @@ A frozen implementation scope for v1.
 
 ### Decisions to lock
 
-- DayDream keeps its current standalone UI
+- DayDreamer keeps its current standalone UI
 - SillyTavern native UI is not exposed to end users
-- v1 exposes DayDream people and world book editing
+- v1 exposes DayDreamer people and world book editing
 - v1 hides chat history, Author's Note, system prompt, model routing, prompt assembly, and extension injection
 - v1 does not save full chat transcripts
 - v1 does not promise full slash-command parity
@@ -257,20 +257,20 @@ A frozen implementation scope for v1.
 - Scope is documented and agreed
 - No requirement to support arbitrary native frontend controls in v1
 
-## Phase 1: Create a Headless DayDream Session Layer
+## Phase 1: Create a Headless DayDreamer Session Layer
 
 ### Goal
 
-Introduce a server-side DayDream session model that can reference SillyTavern characters, chats, and metadata.
+Introduce a server-side DayDreamer session model that can reference SillyTavern characters, chats, and metadata.
 
 ### Tasks
 
-- Extend [src/endpoints/daydream.js](./src/endpoints/daydream.js:215) with session-oriented APIs:
-  - `POST /api/daydream/session/create`
-  - `POST /api/daydream/session/load`
-  - `POST /api/daydream/session/save`
-- Define a canonical DayDream session record
-- Map a DayDream session to:
+- Extend [src/endpoints/DayDreamer.js](./src/endpoints/DayDreamer.js:215) with session-oriented APIs:
+  - `POST /api/DayDreamer/session/create`
+  - `POST /api/DayDreamer/session/load`
+  - `POST /api/DayDreamer/session/save`
+- Define a canonical DayDreamer session record
+- Map a DayDreamer session to:
   - one ST character
   - one ST chat
   - one ST chat metadata object
@@ -282,7 +282,7 @@ Introduce a server-side DayDream session model that can reference SillyTavern ch
 
 ### Acceptance criteria
 
-- A DayDream session can be created and resumed on the server
+- A DayDreamer session can be created and resumed on the server
 - Session data survives page refresh
 - A session can be linked to a SillyTavern chat file
 
@@ -294,7 +294,7 @@ Load all generation inputs from server-side state rather than browser-only globa
 
 ### Tasks
 
-- Create `src/daydream-st/context-loader.js`
+- Create `src/DayDreamer-st/context-loader.js`
 - Load:
   - character card fields
   - chat history
@@ -323,14 +323,14 @@ Move the prompt-building logic into reusable server-side code.
 
 ### Tasks
 
-- Create `src/daydream-st/prompt-assembly.js`
+- Create `src/DayDreamer-st/prompt-assembly.js`
 - Extract or port the smallest possible subset of logic from:
   - [public/script.js](./public/script.js:4207)
   - [public/scripts/openai.js](./public/scripts/openai.js:1513)
   - [public/scripts/world-info.js](./public/scripts/world-info.js:892)
   - [public/scripts/authors-note.js](./public/scripts/authors-note.js:324)
 - Keep the API narrow:
-  - input: DayDream session context + generation request
+  - input: DayDreamer session context + generation request
   - output: final prompt/messages + provider settings
 
 ### Reuse strategy
@@ -341,7 +341,7 @@ Move the prompt-building logic into reusable server-side code.
 
 ### Acceptance criteria
 
-- DayDream can produce prompt payloads that match SillyTavern behavior closely enough for the same character/setup
+- DayDreamer can produce prompt payloads that match SillyTavern behavior closely enough for the same character/setup
 - World info and Author's Note are visibly affecting output
 
 ## Phase 4: Reuse Existing Provider Dispatch
@@ -352,43 +352,43 @@ Once prompt assembly is complete, route the request through existing SillyTavern
 
 ### Tasks
 
-- Add `src/daydream-st/provider-dispatch.js`
+- Add `src/DayDreamer-st/provider-dispatch.js`
 - Reuse [src/endpoints/backends/chat-completions.js](./src/endpoints/backends/chat-completions.js:2016) for final upstream dispatch
-- Avoid direct raw fetch calls to upstream providers from `daydream.js`
+- Avoid direct raw fetch calls to upstream providers from `DayDreamer.js`
 - Preserve streaming behavior
 
 ### Acceptance criteria
 
-- DayDream uses the same provider routing path as SillyTavern chat completions
-- Changing provider presets changes DayDream behavior without separate provider code
+- DayDreamer uses the same provider routing path as SillyTavern chat completions
+- Changing provider presets changes DayDreamer behavior without separate provider code
 
-## Phase 5: Connect DayDream Public API to the Shared Orchestrator
+## Phase 5: Connect DayDreamer Public API to the Shared Orchestrator
 
 ### Goal
 
-Replace the current direct DayDream provider proxy with the new orchestration backend.
+Replace the current direct DayDreamer provider proxy with the new orchestration backend.
 
 ### Tasks
 
-- Refactor [src/endpoints/daydream.js](./src/endpoints/daydream.js:215)
+- Refactor [src/endpoints/DayDreamer.js](./src/endpoints/DayDreamer.js:215)
 - Current endpoint responsibilities should become:
   - resolve session
-  - assemble DayDream gameplay context
+  - assemble DayDreamer gameplay context
   - call shared orchestration
   - stream response
 
 ### Preserve
 
 - existing `bootstrap` API shape where practical
-- existing DayDream frontend streaming UX
-- existing DayDream `DAYDREAM_META` contract
+- existing DayDreamer frontend streaming UX
+- existing DayDreamer `DayDreamer_META` contract
 
 ### Acceptance criteria
 
-- DayDream frontend does not need major UX changes
+- DayDreamer frontend does not need major UX changes
 - Backend request path no longer directly calls upstream `/chat/completions`
 
-## Phase 6: Persist Lightweight DayDream Metadata
+## Phase 6: Persist Lightweight DayDreamer Metadata
 
 ### Goal
 
@@ -396,22 +396,22 @@ Save enough metadata to make sessions resumable and lore-aware without storing f
 
 ### Tasks
 
-- Persist DayDream gameplay state in the DayDream session record
+- Persist DayDreamer gameplay state in the DayDreamer session record
 - Persist user-editable people records
 - Persist user-editable world book entries
 - Do not persist complete user/assistant chat history in v1
 
 Suggested metadata keys:
 
-- `daydream.state`
-- `daydream.story`
-- `daydream.ui_profile`
-- `daydream.system`
+- `DayDreamer.state`
+- `DayDreamer.story`
+- `DayDreamer.ui_profile`
+- `DayDreamer.system`
 
 ### Acceptance criteria
 
-- Reloading a DayDream session restores story state, people, world book entries, resources, events, and visible stats
-- No ST chat transcript is created or appended during normal DayDream generation
+- Reloading a DayDreamer session restores story state, people, world book entries, resources, events, and visible stats
+- No ST chat transcript is created or appended during normal DayDreamer generation
 
 ## Phase 7: Optional Advanced Features
 
@@ -433,21 +433,21 @@ Do not block v1 on these.
 - Do not rebuild ST's character/chat/world info storage formats.
 - Do not force users into the native SillyTavern frontend.
 - Do not attempt full native extension parity before the shared orchestration layer exists.
-- Do not make DayDream depend on browser globals from `public/script.js` in production.
+- Do not make DayDreamer depend on browser globals from `public/script.js` in production.
 
 ## Recommended File Changes
 
 ### New files
 
-- `src/daydream-st/session-store.js`
-- `src/daydream-st/context-loader.js`
-- `src/daydream-st/prompt-assembly.js`
-- `src/daydream-st/orchestration.js`
-- `src/daydream-st/provider-dispatch.js`
+- `src/DayDreamer-st/session-store.js`
+- `src/DayDreamer-st/context-loader.js`
+- `src/DayDreamer-st/prompt-assembly.js`
+- `src/DayDreamer-st/orchestration.js`
+- `src/DayDreamer-st/provider-dispatch.js`
 
 ### Existing files to modify
 
-- [src/endpoints/daydream.js](./src/endpoints/daydream.js:215)
+- [src/endpoints/DayDreamer.js](./src/endpoints/DayDreamer.js:215)
 - [src/server-main.js](./src/server-main.js:242) only if new public session endpoints are added
 
 ### Source files to mine for reusable logic
@@ -463,10 +463,10 @@ Do not block v1 on these.
 
 | Capability | V1 status | Reuse mode | Notes |
 | --- | --- | --- | --- |
-| DayDream people cards | Yes | DayDream-native | User-facing character/relationship layer with add/edit/delete |
+| DayDreamer people cards | Yes | DayDreamer-native | User-facing character/relationship layer with add/edit/delete |
 | ST character card fields | Hidden/optional | reuse/extract | Backend-only; do not expose native ST UI in v1 |
 | Chat history | No | defer | Do not save full transcripts in v1 |
-| DayDream world book | Yes | DayDream-native | Generated via `world_entries`, user-editable |
+| DayDreamer world book | Yes | DayDreamer-native | Generated via `world_entries`, user-editable |
 | ST World Info | Hidden/optional | extract | Backend-only if explicitly bound later |
 | Author's Note | Hidden | extract | Internal control only |
 | System Prompt | Hidden | reuse/extract | Internal control only |
@@ -500,12 +500,12 @@ If we try to port the entire native frontend generation stack in one shot, the p
 
 Mitigation:
 
-- implement only the subset DayDream needs for v1
+- implement only the subset DayDreamer needs for v1
 - keep a strict supported capability matrix
 
 ### Risk 3: Public endpoint abuse
 
-DayDream public routes currently sit before auth in [src/server-main.js](./src/server-main.js:242).
+DayDreamer public routes currently sit before auth in [src/server-main.js](./src/server-main.js:242).
 
 Mitigation:
 
@@ -517,14 +517,14 @@ Mitigation:
 
 The project is successful when all of the following are true:
 
-1. Users interact only with DayDream UI.
-2. DayDream no longer calls upstream model providers directly.
-3. Users can add, edit, and delete DayDream people records.
-4. Users can add, edit, delete, enable, and disable DayDream world book entries.
-5. DayDream does not save full chat transcripts during normal generation.
-6. DayDream can apply hidden Author's Note and system prompt logic.
+1. Users interact only with DayDreamer UI.
+2. DayDreamer no longer calls upstream model providers directly.
+3. Users can add, edit, and delete DayDreamer people records.
+4. Users can add, edit, delete, enable, and disable DayDreamer world book entries.
+5. DayDreamer does not save full chat transcripts during normal generation.
+6. DayDreamer can apply hidden Author's Note and system prompt logic.
 7. Provider routing is service-owned and hidden from users.
-8. Streaming still works in the public DayDream page.
+8. Streaming still works in the public DayDreamer page.
 9. The implementation reuses existing ST modules wherever practical instead of recreating them.
 
 ## Recommended Execution Order
@@ -545,8 +545,8 @@ This goal is realistic.
 
 The correct implementation path is:
 
-- keep DayDream UI
-- stop direct upstream model calls from DayDream
+- keep DayDreamer UI
+- stop direct upstream model calls from DayDreamer
 - extract a headless SillyTavern orchestration core
 - reuse existing SillyTavern provider dispatch and storage formats
 

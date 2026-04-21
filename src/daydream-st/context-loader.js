@@ -48,7 +48,7 @@ export function readUserSettings(request) {
     try {
         return { ...fallback, ...JSON.parse(fs.readFileSync(settingsPath, 'utf8')) };
     } catch (error) {
-        console.error('Failed to parse DayDream user settings:', error);
+        console.error('Failed to parse DayDreamer user settings:', error);
         return fallback;
     }
 }
@@ -147,7 +147,7 @@ export async function listSillyTavernResources(request) {
             world_names: worldNames,
         };
     } catch (error) {
-        console.warn('Failed to enumerate SillyTavern DayDream resources:', error.message);
+        console.warn('Failed to enumerate SillyTavern DayDreamer resources:', error.message);
         return {
             available: false,
             characters: [],
@@ -156,7 +156,7 @@ export async function listSillyTavernResources(request) {
     }
 }
 
-export function getDayDreamProfile(story, uiProfiles = {}) {
+export function getDayDreamerProfile(story, uiProfiles = {}) {
     let profile = structuredClone(uiProfiles['通用'] ?? uiProfiles.general ?? Object.values(uiProfiles)[0] ?? { top_stats: [], tabs: [] });
 
     if (story?.story_class && uiProfiles[story.story_class]) {
@@ -380,7 +380,7 @@ export function getResolvedChatBinding({ stContext = {}, stData = {}, story = {}
         };
     }
 
-    const baseName = story?.title || state?.story_title || stData.characterData?.name || 'DayDream';
+    const baseName = story?.title || state?.story_title || stData.characterData?.name || 'DayDreamer';
 
     return {
         avatar_url: stContext.avatar_url,

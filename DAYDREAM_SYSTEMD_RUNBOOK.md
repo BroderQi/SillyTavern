@@ -1,12 +1,12 @@
-# DayDream Systemd 部署与二次更新手册
+# DayDreamer Systemd 部署与二次更新手册
 
 
 cd /opt/SillyTavern
 git pull
 
-cat /opt/SillyTavern/deploy/nginx/bkgf-daydream.conf > /etc/nginx/conf.d/bkgf-daydream.conf
+cat /opt/SillyTavern/deploy/nginx/bkgf-DayDreamer.conf > /etc/nginx/conf.d/bkgf-DayDreamer.conf
 nginx -t && systemctl reload nginx
-systemctl restart daydream-sillytavern
+systemctl restart DayDreamer-sillytavern
 curl -I https://bkgf.net/ | grep -i referrer-policy
 
 如果第一个 `grep` 没有输出，说明服务器代码还没拉到包含 `Referrer-Policy` 的版本。如果第二个 `grep` 没有输出，说明配置没有复制到 `/etc/nginx/conf.d/`。如果两个 `grep` 都有输出但仍然显示 `referrer-policy: no-referrer`，检查 Nginx 最终加载配置：
@@ -16,12 +16,12 @@ nginx -T | grep -i -C 3 "referrer-policy\|server_name bkgf"
 ```
 
 
-这份文档用于服务器正式部署。目标是让 SillyTavern/DayDream 在后台常驻运行，并在服务器重启后自动恢复。
+这份文档用于服务器正式部署。目标是让 SillyTavern/DayDreamer 在后台常驻运行，并在服务器重启后自动恢复。
 
 公网入口仍然交给 Nginx，Node 服务只监听本机：
 
 ```text
-Nginx 443/80 -> 127.0.0.1:8000 -> SillyTavern DayDream
+Nginx 443/80 -> 127.0.0.1:8000 -> SillyTavern DayDreamer
 ```
 
 ## 1. 约定路径
@@ -58,33 +58,33 @@ npm install
 创建环境变量文件：
 
 ```bash
-nano /etc/daydream.env
+nano /etc/DayDreamer.env
 ```
 
 写入：
 
 ```bash
-DAYDREAM_API_KEY=sk-9ccd22fbd64d429daef1327e6824ebe3
-DAYDREAM_BASE_URL=https://api.deepseek.com/v1
-DAYDREAM_MODEL=deepseek-chat
-DAYDREAM_RESPONSE_TOKENS=1200
+DayDreamer_API_KEY=sk-9ccd22fbd64d429daef1327e6824ebe3
+DayDreamer_BASE_URL=https://api.deepseek.com/v1
+DayDreamer_MODEL=deepseek-chat
+DayDreamer_RESPONSE_TOKENS=1200
 NODE_ENV=production
 ```
 
 如果你使用 OpenRouter，可以这样：
 
 ```bash
-DAYDREAM_API_KEY=你的OpenRouterKey
-DAYDREAM_BASE_URL=https://openrouter.ai/api/v1
-DAYDREAM_MODEL=openai/gpt-4o-mini
-DAYDREAM_RESPONSE_TOKENS=1200
+DayDreamer_API_KEY=你的OpenRouterKey
+DayDreamer_BASE_URL=https://openrouter.ai/api/v1
+DayDreamer_MODEL=openai/gpt-4o-mini
+DayDreamer_RESPONSE_TOKENS=1200
 NODE_ENV=production
 ```
 
 保护密钥文件：
 
 ```bash
-chmod 600 /etc/daydream.env
+chmod 600 /etc/DayDreamer.env
 ```
 
 ## 4. 创建 systemd 服务
@@ -92,27 +92,27 @@ chmod 600 /etc/daydream.env
 创建服务文件：
 
 ```bash
-nano /etc/systemd/system/daydream-sillytavern.service
+nano /etc/systemd/system/DayDreamer-sillytavern.service
 ```
 
 写入：
 
 ```ini
 [Unit]
-Description=DayDream SillyTavern Public Service
+Description=DayDreamer SillyTavern Public Service
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 WorkingDirectory=/opt/SillyTavern
-EnvironmentFile=/etc/daydream.env
+EnvironmentFile=/etc/DayDreamer.env
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=5
 TimeoutStopSec=30
 KillSignal=SIGINT
-SyslogIdentifier=daydream-sillytavern
+SyslogIdentifier=DayDreamer-sillytavern
 
 [Install]
 WantedBy=multi-user.target
@@ -130,20 +130,20 @@ which node
 
 ```bash
 systemctl daemon-reload
-systemctl enable daydream-sillytavern
-systemctl start daydream-sillytavern
+systemctl enable DayDreamer-sillytavern
+systemctl start DayDreamer-sillytavern
 ```
 
 查看状态：
 
 ```bash
-systemctl status daydream-sillytavern --no-pager
+systemctl status DayDreamer-sillytavern --no-pager
 ```
 
 看实时日志：
 
 ```bash
-journalctl -u daydream-sillytavern -f
+journalctl -u DayDreamer-sillytavern -f
 ```
 
 ## 6. 本机验收
@@ -151,16 +151,16 @@ journalctl -u daydream-sillytavern -f
 先在服务器内部确认 Node 服务跑通：
 
 ```bash
-curl -I http://127.0.0.1:8000/daydream
-curl -s http://127.0.0.1:8000/api/daydream/bootstrap | head
+curl -I http://127.0.0.1:8000/DayDreamer
+curl -s http://127.0.0.1:8000/api/DayDreamer/bootstrap | head
 ```
 
-`/daydream` 应该返回 `200`。
+`/DayDreamer` 应该返回 `200`。
 
 如果这里不通，不要先动 Nginx，先查：
 
 ```bash
-journalctl -u daydream-sillytavern -n 100 --no-pager
+journalctl -u DayDreamer-sillytavern -n 100 --no-pager
 ```
 
 ## 7. Nginx 配置
@@ -168,7 +168,7 @@ journalctl -u daydream-sillytavern -n 100 --no-pager
 使用仓库里的配置模板：
 
 ```text
-deploy/nginx/bkgf-daydream.conf
+deploy/nginx/bkgf-DayDreamer.conf
 ```
 
 部署到服务器：
@@ -176,7 +176,7 @@ deploy/nginx/bkgf-daydream.conf
 ```bash
 cp -a /etc/nginx/conf.d /root/nginx-conf-backup-$(date +%F-%H%M%S)
 rm -f /etc/nginx/conf.d/*.conf
-cp /opt/SillyTavern/deploy/nginx/bkgf-daydream.conf /etc/nginx/conf.d/bkgf-daydream.conf
+cp /opt/SillyTavern/deploy/nginx/bkgf-DayDreamer.conf /etc/nginx/conf.d/bkgf-DayDreamer.conf
 nginx -t
 systemctl reload nginx
 ```
@@ -185,7 +185,7 @@ systemctl reload nginx
 
 ```bash
 curl -I https://bkgf.net/
-curl -I https://bkgf.net/daydream
+curl -I https://bkgf.net/DayDreamer
 curl -I https://bkgf.net/ | grep -i referrer-policy
 curl -I https://bkgf.net/api/settings/get
 ```
@@ -194,7 +194,7 @@ curl -I https://bkgf.net/api/settings/get
 
 ```text
 https://bkgf.net/                 200
-https://bkgf.net/daydream         200
+https://bkgf.net/DayDreamer         200
 referrer-policy: origin
 https://bkgf.net/api/settings/get 404
 ```
@@ -207,18 +207,18 @@ https://bkgf.net/api/settings/get 404
 cd /opt/SillyTavern
 git pull
 npm install
-node --check src/endpoints/daydream.js
-node --check public/scripts/daydream-public.js
+node --check src/endpoints/DayDreamer.js
+node --check public/scripts/DayDreamer-public.js
 node --check public/scripts/sse-core-stream.js
 node --check src/server-main.js
-systemctl restart daydream-sillytavern
-systemctl status daydream-sillytavern --no-pager
+systemctl restart DayDreamer-sillytavern
+systemctl status DayDreamer-sillytavern --no-pager
 ```
 
 如果 Nginx 配置也改了：
 
 ```bash
-cp /opt/SillyTavern/deploy/nginx/bkgf-daydream.conf /etc/nginx/conf.d/bkgf-daydream.conf
+cp /opt/SillyTavern/deploy/nginx/bkgf-DayDreamer.conf /etc/nginx/conf.d/bkgf-DayDreamer.conf
 nginx -t
 systemctl reload nginx
 ```
@@ -236,31 +236,31 @@ curl -I https://bkgf.net/api/settings/get
 重启：
 
 ```bash
-systemctl restart daydream-sillytavern
+systemctl restart DayDreamer-sillytavern
 ```
 
 停止：
 
 ```bash
-systemctl stop daydream-sillytavern
+systemctl stop DayDreamer-sillytavern
 ```
 
 启动：
 
 ```bash
-systemctl start daydream-sillytavern
+systemctl start DayDreamer-sillytavern
 ```
 
 查看最近日志：
 
 ```bash
-journalctl -u daydream-sillytavern -n 100 --no-pager
+journalctl -u DayDreamer-sillytavern -n 100 --no-pager
 ```
 
 实时日志：
 
 ```bash
-journalctl -u daydream-sillytavern -f
+journalctl -u DayDreamer-sillytavern -f
 ```
 
 查看端口：
@@ -272,8 +272,8 @@ ss -lntp | grep 8000
 修改模型配置后重启：
 
 ```bash
-nano /etc/daydream.env
-systemctl restart daydream-sillytavern
+nano /etc/DayDreamer.env
+systemctl restart DayDreamer-sillytavern
 ```
 
 ## 10. 回滚
@@ -285,7 +285,7 @@ cd /opt/SillyTavern
 git log --oneline -5
 git checkout 上一个可用commit
 npm install
-systemctl restart daydream-sillytavern
+systemctl restart DayDreamer-sillytavern
 ```
 
 如果 Nginx 异常，恢复备份：
@@ -313,7 +313,7 @@ curl -I https://bkgf.net/characters
 确认浏览器拿不到模型密钥：
 
 ```bash
-curl -s https://bkgf.net/api/daydream/bootstrap
+curl -s https://bkgf.net/api/DayDreamer/bootstrap
 ```
 
-返回里只能看到模型是否已配置和模型名，不应该出现 `DAYDREAM_API_KEY`。
+返回里只能看到模型是否已配置和模型名，不应该出现 `DayDreamer_API_KEY`。

@@ -4,7 +4,7 @@ function getBaseUrl(request) {
     const protocol = request.protocol || 'http';
     const host = request.get('host');
     if (!host) {
-        throw new Error('Unable to resolve DayDream internal API base URL: missing host header.');
+        throw new Error('Unable to resolve DayDreamer internal API base URL: missing host header.');
     }
     return `${protocol}://${host}`;
 }

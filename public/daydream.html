@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DayDream 世界引擎</title>
-    <link rel="stylesheet" href="/scripts/daydream-public.css">
+    <title>DayDreamer 世界引擎</title>
+    <link rel="stylesheet" href="/scripts/DayDreamer-public.css">
     <script>
         var _hmt = _hmt || [];
         (function () {
@@ -16,15 +16,15 @@
     </script>
 </head>
 <body>
-    <div id="daydream_public_app" class="dd-app">
+    <div id="DayDreamer_public_app" class="dd-app">
         <div class="dd-shell">
             <header class="dd-header">
                 <div class="dd-title-stack">
                     <div class="dd-brand">
-                        <span class="dd-brand-name">DayDream</span>
+                        <span class="dd-brand-name">DayDreamer</span>
                         <span class="dd-brand-type">世界引擎</span>
                     </div>
-                    <h1 id="dd_story_title">DayDream</h1>
+                    <h1 id="dd_story_title">DayDreamer</h1>
                     <span id="dd_story_class" class="dd-story-class">世界引擎</span>
                 </div>
                 <button id="dd_open_setup" class="dd-icon-btn" title="选择故事">重开</button>
@@ -48,10 +48,10 @@
     <script>
         window.addEventListener('error', function (event) {
             const target = event.target;
-            if (target instanceof HTMLScriptElement && target.src.includes('/scripts/daydream-public.js')) {
+            if (target instanceof HTMLScriptElement && target.src.includes('/scripts/DayDreamer-public.js')) {
                 const content = document.getElementById('dd_content');
                 if (content) {
-                    content.innerHTML = '<section class="dd-card"><div class="dd-error">DayDream 脚本加载失败，请检查 Nginx 静态资源白名单。</div></section>';
+                    content.innerHTML = '<section class="dd-card"><div class="dd-error">DayDreamer 脚本加载失败，请检查 Nginx 静态资源白名单。</div></section>';
                 }
             }
         }, true);
@@ -60,10 +60,10 @@
             const content = document.getElementById('dd_content');
             if (content && !content.textContent.trim()) {
                 const message = event.reason && event.reason.message ? event.reason.message : '未知错误';
-                content.innerHTML = '<section class="dd-card"><div class="dd-error">DayDream 启动失败：' + String(message).replace(/[<>&"]/g, '') + '</div></section>';
+                content.innerHTML = '<section class="dd-card"><div class="dd-error">DayDreamer 启动失败：' + String(message).replace(/[<>&"]/g, '') + '</div></section>';
             }
         });
     </script>
-    <script type="module" src="/scripts/daydream-public.js"></script>
+    <script type="module" src="/scripts/DayDreamer-public.js"></script>
 </body>
 </html>

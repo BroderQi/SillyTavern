@@ -7,7 +7,7 @@ function cleanText(value) {
 function buildLightweightMetadata(session, payload, assistantText) {
     return {
         ...(session?.chat_metadata ?? {}),
-        daydream: {
+        DayDreamer: {
             session_id: session?.session_id ?? null,
             story_id: payload?.state?.story_id ?? payload?.story?.id ?? null,
             story_title: payload?.state?.story_title ?? payload?.story?.title ?? '',
@@ -19,7 +19,7 @@ function buildLightweightMetadata(session, payload, assistantText) {
     };
 }
 
-export async function persistDayDreamTurn(request, session, payload, { assistantText, resolvedProvider, st_summary } = {}) {
+export async function persistDayDreamerTurn(request, session, payload, { assistantText, resolvedProvider, st_summary } = {}) {
     if (!request.user?.directories || !session) {
         return session;
     }

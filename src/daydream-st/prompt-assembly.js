@@ -5,7 +5,7 @@ import {
     extractChatMessages,
     extractSystemPrompt,
     flattenWorldInfoBooks,
-    getDayDreamProfile,
+    getDayDreamerProfile,
     getProviderSummaryFromSettings,
 } from './context-loader.js';
 
@@ -70,7 +70,7 @@ function getProductTabs(profile) {
     return tabs;
 }
 
-function formatDayDreamWorldEntry(entry) {
+function formatDayDreamerWorldEntry(entry) {
     if (!entry || typeof entry !== 'object' || entry.enabled === false) {
         return '';
     }
@@ -88,27 +88,27 @@ function formatDayDreamWorldEntry(entry) {
     return [`- ${title}`, keys, content].filter(Boolean).join('\n');
 }
 
-function buildDayDreamWorldBook(state) {
+function buildDayDreamerWorldBook(state) {
     const entries = Array.isArray(state?.world_entries)
-        ? state.world_entries.map(formatDayDreamWorldEntry).filter(Boolean)
+        ? state.world_entries.map(formatDayDreamerWorldEntry).filter(Boolean)
         : [];
 
     if (!entries.length) {
         return '';
     }
 
-    return `[DayDream Editable World Book]\n${entries.join('\n\n')}`;
+    return `[DayDreamer Editable World Book]\n${entries.join('\n\n')}`;
 }
 
 export function buildSystemSections({ story, state, uiProfiles, corePrompt, turnPrompt, endingPrompt, settings, stContext, stData, message }) {
     const isEnding = /^\s*(?:end|\u7ed3\u675f)\s*$/i.test(String(message ?? ''));
-    const profile = getDayDreamProfile(story, uiProfiles ?? {});
+    const profile = getDayDreamerProfile(story, uiProfiles ?? {});
     const stateBlock = buildStateBlock(story, state, profile);
     const systemPrompt = extractSystemPrompt(settings, stData.characterData, stData.chatMetadata, stContext);
     const authorNote = extractAuthorNote(settings, stData.chatMetadata, stContext);
     const characterContext = extractCharacterContext(stData.characterData, stData.chatMetadata);
     const worldInfoText = flattenWorldInfoBooks(stData.worldBooks);
-    const dayDreamWorldBook = buildDayDreamWorldBook(state);
+    const DayDreamerWorldBook = buildDayDreamerWorldBook(state);
     const uiMapping = getUiMapping(profile);
     const sections = [corePrompt];
 
@@ -138,25 +138,25 @@ export function buildSystemSections({ story, state, uiProfiles, corePrompt, turn
         sections.push(worldInfoText);
     }
 
-    if (dayDreamWorldBook) {
-        sections.push(dayDreamWorldBook);
+    if (DayDreamerWorldBook) {
+        sections.push(DayDreamerWorldBook);
     }
 
     sections.push([
-        '[DayDream Current Story]',
+        '[DayDreamer Current Story]',
         JSON.stringify(story ?? {}, null, 2),
         '',
-        '[DayDream Current State]',
+        '[DayDreamer Current State]',
         JSON.stringify(stateBlock, null, 2),
         '',
-        '[DayDream Visible UI]',
+        '[DayDreamer Visible UI]',
         JSON.stringify({
             top_stats: stateBlock.visible_stats,
             tabs: getProductTabs(profile).map(tab => ({ key: tab.key, label: tab.label })),
             mapping: uiMapping,
         }, null, 2),
         '',
-        '[DayDream Output Contract] Visible text must output title, environment, plot, and options first. State changes, people/relationships, resources, events, foreshadows, editable world book entries, and stat updates must be written to the ending <!-- DAYDREAM_META ... --> JSON comment block. Only update keys visible in top_stats. Write durable generated lore to world_entries as objects with title, keys, content, and enabled.',
+        '[DayDreamer Output Contract] Visible text must output title, environment, plot, and options first. State changes, people/relationships, resources, events, foreshadows, editable world book entries, and stat updates must be written to the ending <!-- DayDreamer_META ... --> JSON comment block. Only update keys visible in top_stats. Write durable generated lore to world_entries as objects with title, keys, content, and enabled.',
         '',
         turnPrompt,
         isEnding ? `\n${endingPrompt}` : '',
@@ -175,7 +175,7 @@ export function buildMessages({ systemContent, requestHistory, stChatMessages, m
     return [
         { role: 'system', content: systemContent },
         ...baseHistory,
-        { role: 'user', content: compact(message, '') || 'Begin the DayDream story.' },
+        { role: 'user', content: compact(message, '') || 'Begin the DayDreamer story.' },
     ];
 }
 

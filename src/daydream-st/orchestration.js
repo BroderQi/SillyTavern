@@ -9,7 +9,7 @@ import {
 } from './context-loader.js';
 import { assemblePromptPayload } from './prompt-assembly.js';
 
-function buildDayDreamMetadata(session, payload, generation, assistantText) {
+function buildDayDreamerMetadata(session, payload, generation, assistantText) {
     const state = payload.state ?? {};
     const story = generation.story ?? payload.story ?? {};
     const worldInfoNames = Array.isArray(generation.st_context.world_info_names)
@@ -29,15 +29,15 @@ function buildDayDreamMetadata(session, payload, generation, assistantText) {
         metadata.system_prompt = generation.st_context.system_prompt;
     }
 
-    metadata['daydream.state'] = state;
-    metadata['daydream.story'] = {
+    metadata['DayDreamer.state'] = state;
+    metadata['DayDreamer.story'] = {
         id: story?.id ?? state.story_id ?? null,
         title: story?.title ?? state.story_title ?? '',
         route: story?.route ?? state.route ?? 'general_story',
         story_class: story?.story_class ?? state.story_class ?? '',
     };
-    metadata['daydream.ui_profile'] = generation.profile ?? {};
-    metadata['daydream.system'] = {
+    metadata['DayDreamer.ui_profile'] = generation.profile ?? {};
+    metadata['DayDreamer.system'] = {
         session_id: session?.session_id ?? null,
         author_note: generation.st_context.author_note ?? metadata.note_prompt ?? '',
         system_prompt: generation.st_context.system_prompt ?? metadata.system_prompt ?? '',
@@ -46,11 +46,11 @@ function buildDayDreamMetadata(session, payload, generation, assistantText) {
         provider_model: generation.resolvedProvider.model ?? '',
         last_reply_preview: String(assistantText ?? '').slice(0, 400),
     };
-    metadata.daydream = {
-        state: metadata['daydream.state'],
-        story: metadata['daydream.story'],
-        ui_profile: metadata['daydream.ui_profile'],
-        system: metadata['daydream.system'],
+    metadata.DayDreamer = {
+        state: metadata['DayDreamer.state'],
+        story: metadata['DayDreamer.story'],
+        ui_profile: metadata['DayDreamer.ui_profile'],
+        system: metadata['DayDreamer.system'],
     };
 
     return metadata;
@@ -58,7 +58,7 @@ function buildDayDreamMetadata(session, payload, generation, assistantText) {
 
 export { getProviderSummaryFromSettings, listSillyTavernResources, readUserSettings };
 
-export async function assembleDayDreamGeneration(request, payload, session, options) {
+export async function assembleDayDreamerGeneration(request, payload, session, options) {
     const settings = readUserSettings(request);
     const stContext = {
         ...(session?.st_context ?? {}),
@@ -111,8 +111,8 @@ export async function assembleDayDreamGeneration(request, payload, session, opti
     };
 }
 
-export async function persistDayDreamTurn(request, session, payload, generation, assistantText) {
-    const chatMetadata = buildDayDreamMetadata(session, payload, generation, assistantText);
+export async function persistDayDreamerTurn(request, session, payload, generation, assistantText) {
+    const chatMetadata = buildDayDreamerMetadata(session, payload, generation, assistantText);
 
     return {
         chatMetadata,
