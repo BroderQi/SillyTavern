@@ -48,6 +48,7 @@ button {
     height: min(100vh, 900px);
     display: grid;
     grid-template-rows: auto auto 1fr auto auto;
+    position: relative;
     overflow: hidden;
     background: var(--surface);
     border: 1px solid rgba(255, 255, 255, 0.28);
@@ -242,6 +243,32 @@ button {
     border: 1px solid rgba(47, 111, 100, 0.18);
     border-radius: 8px;
     font-size: 14px;
+}
+
+.dd-queue-popup {
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    bottom: 96px;
+    z-index: 5;
+    display: grid;
+    gap: 3px;
+    padding: 12px 14px;
+    color: var(--primary-strong);
+    background: rgba(250, 248, 239, 0.97);
+    border: 1px solid rgba(47, 111, 100, 0.32);
+    border-radius: 8px;
+    box-shadow: 0 14px 34px rgba(38, 52, 47, 0.18);
+    pointer-events: none;
+}
+
+.dd-queue-popup b {
+    font-size: 14px;
+}
+
+.dd-queue-popup span {
+    color: var(--muted);
+    font-size: 13px;
 }
 
 .dd-option b {

@@ -310,6 +310,7 @@ function selectAction(text) {
         const input = qs('#dd_custom_action');
         if (input?.value?.trim() === action) input.value = '';
         renderPendingOption();
+        showQueuedActionPopup();
         return;
     }
     sendAction(action);
@@ -333,6 +334,20 @@ function renderPendingOption() {
 function renderPendingAction() {
     if (!pendingAction) return '';
     return '<div id="dd_queued_action" class="dd-pending-action" role="status">已选择，正在加载新场景中...</div>';
+}
+
+function showQueuedActionPopup() {
+    qs('#dd_queue_popup')?.remove();
+    qs('.dd-shell')?.insertAdjacentHTML('beforeend', `
+        <div id="dd_queue_popup" class="dd-queue-popup" role="status">
+            <b>已收到行动</b>
+            <span>正在进入下一幕...</span>
+        </div>
+    `);
+}
+
+function hideQueuedActionPopup() {
+    qs('#dd_queue_popup')?.remove();
 }
 
 function renderStatsPanel(state, profile, title) {
@@ -813,7 +828,9 @@ async function sendAction(text) {
     const profile = getProfile(story);
     if (isGenerating) {
         pendingAction = message;
+        qs('#dd_custom_action').value = '';
         renderPendingOption();
+        showQueuedActionPopup();
         return;
     }
     if (!story) {
@@ -827,6 +844,7 @@ async function sendAction(text) {
     }
 
     qs('#dd_custom_action').value = '';
+    hideQueuedActionPopup();
     isGenerating = true;
     qs('#daydream_public_app').classList.add('dd-loading');
     if (activeTab === 'story') renderStreamingReply(story, '');
@@ -881,6 +899,7 @@ async function sendAction(text) {
         completed = true;
     } catch (error) {
         pendingAction = '';
+        hideQueuedActionPopup();
         renderError(error.message || '生成失败');
     } finally {
         isGenerating = false;
