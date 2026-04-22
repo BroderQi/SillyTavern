@@ -819,6 +819,7 @@ button {
 }
 
 .dd-detail-section,
+.dd-detail-image-card,
 .dd-start-panel,
 .dd-custom-builder {
     padding: 16px;
@@ -830,6 +831,20 @@ button {
 .dd-detail-section {
     display: grid;
     gap: 10px;
+}
+
+.dd-detail-image-card {
+    overflow: hidden;
+}
+
+.dd-detail-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: min(72vh, 1100px);
+    object-fit: contain;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.75);
 }
 
 .dd-info-grid {

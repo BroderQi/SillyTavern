@@ -1179,6 +1179,8 @@ function renderStoryDetail(story) {
     renderHeader(story.title || '故事详情', story.story_class || '世界引擎', 'preplay');
 
     const saved = loadState();
+    const detailImage = String(story?.detail_image || '').trim();
+    const detailImageAlt = String(story?.detail_image_alt || story?.title || '故事详情图').trim();
     qs('#dd_content').innerHTML = `
         <section class="dd-detail">
             <button id="dd_back_library" class="dd-text-button">返回故事库</button>
@@ -1190,6 +1192,17 @@ function renderStoryDetail(story) {
                 </div>
             </div>
             <div class="dd-detail-tags">${renderTagPills(getStoryTags(story))}</div>
+            ${detailImage ? `
+                <section class="dd-detail-image-card">
+                    <img
+                        class="dd-detail-image"
+                        src="${escapeHtml(detailImage)}"
+                        alt="${escapeHtml(detailImageAlt)}"
+                        loading="lazy"
+                        onerror="this.closest('.dd-detail-image-card')?.remove()"
+                    >
+                </section>
+            ` : ''}
             <section class="dd-detail-section">
                 <h2>世界观</h2>
                 <div class="dd-screen">${formatText(getWorldview(story))}</div>
