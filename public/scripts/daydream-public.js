@@ -1,5 +1,9 @@
 import EventSourceStream from './sse-core-stream.js';
 
+// Maintainer note: the public DayDreamer page is the active product surface.
+// The legacy extension page under /scripts/extensions/third-party/daydream/ is deprecated.
+// New story-library or UX work should land here instead of the deprecated extension entry.
+
 const STORAGE_KEY = 'DayDreamer_public_state_v1';
 const HISTORY_KEY = 'DayDreamer_public_history_v1';
 const MAX_VISIBLE_HISTORY = 0;
@@ -160,6 +164,11 @@ function getCoverStyle(story) {
 }
 
 function getWorldview(story) {
+    const explicitWorldview = String(story?.worldview ?? '').trim();
+    if (explicitWorldview) {
+        return explicitWorldview;
+    }
+
     const constraints = (story?.custom_constraints ?? []).filter(Boolean).join('；');
     const lines = [
         `这是一个发生在${story?.spacetime || '未知时空'}的故事。${story?.theme ? `核心矛盾围绕${story.theme}展开。` : ''}`,
@@ -1353,6 +1362,8 @@ function startStory(story) {
     state.core_conflict = story.theme;
     state.active_hooks = [story.opening].filter(Boolean);
     state.character = character;
+    state.relationships = normalizePeople(story.relationships);
+    state.world_entries = normalizeWorldEntries(story.world_entries);
     saveState(state);
     saveHistory([]);
     hideSetup();
@@ -1365,7 +1376,7 @@ function startStory(story) {
     if (story.is_custom) {
         sendAction(`开始自定义 DayDreamer 故事：${story.opening}。角色昵称：${name}。请根据这个设定生成第一幕，直接进入事件现场。`);
     } else {
-        sendAction(`开始 DayDreamer 预设故事《${story.title}》。角色昵称：${name}。请根据当前剧本生成第一幕，直接进入事件现场。`);
+        sendAction(`开始 DayDreamer 预设故事《${story.title}》。角色昵称：${name}。${story.role_prompt ? `${story.role_prompt}。` : ''}请根据当前剧本生成第一幕，直接进入事件现场。`);
     }
 }
 
