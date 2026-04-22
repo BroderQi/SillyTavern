@@ -21,6 +21,9 @@ import { proxyEventStream } from '../daydream-st/streaming.js';
 
 export const router = express.Router();
 
+// Maintainer note: the public DayDreamer page is the maintained product surface.
+// Assets still live under the legacy extension directory, but the extension page itself is deprecated.
+// Future story-library and UX changes should target the public page flow first.
 const DayDreamer_DIR = path.join(serverDirectory, 'public', 'scripts', 'extensions', 'third-party', 'daydream');
 const STORIES_PATH = path.join(DayDreamer_DIR, 'data', 'stories.json');
 const UI_PROFILES_PATH = path.join(DayDreamer_DIR, 'data', 'ui-profiles.json');
