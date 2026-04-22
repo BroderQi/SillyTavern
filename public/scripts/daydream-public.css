@@ -883,9 +883,39 @@ button {
 }
 
 .dd-start-panel label,
+.dd-field-group > span,
 .dd-custom-builder label {
     color: var(--ink);
     font-weight: 900;
+}
+
+.dd-field-group {
+    display: grid;
+    gap: 8px;
+}
+
+.dd-gender-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.dd-gender {
+    min-width: 0;
+    min-height: 40px;
+    padding: 0 8px;
+    color: var(--primary-strong);
+    background: rgba(255, 255, 255, 0.64);
+    border: 1px solid rgba(47, 111, 100, 0.22);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.dd-gender.active {
+    color: #fff;
+    background: var(--primary);
+    border-color: var(--primary);
 }
 
 .dd-start-panel .dd-primary,

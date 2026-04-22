@@ -30,6 +30,7 @@ const COVER_PALETTES = [
     ['#703d4b', '#d7837f', '#faeeee'],
     ['#2f4f4a', '#d1b45f', '#f5f2df'],
 ];
+const GENDER_OPTIONS = ['男', '女', '不限定'];
 
 const defaultStats = {
     turn_count: 0,
@@ -161,6 +162,24 @@ function getCoverPalette(story) {
 function getCoverStyle(story) {
     const [a, b, c] = getCoverPalette(story);
     return `--cover-a:${a};--cover-b:${b};--cover-c:${c};`;
+}
+
+function normalizeGender(value) {
+    return GENDER_OPTIONS.includes(value) ? value : '男';
+}
+
+function renderGenderOptions(selectedGender) {
+    const activeGender = normalizeGender(selectedGender);
+    return GENDER_OPTIONS.map(gender => `
+        <button
+            type="button"
+            class="dd-gender ${gender === activeGender ? 'active' : ''}"
+            data-gender="${escapeHtml(gender)}"
+            aria-pressed="${gender === activeGender ? 'true' : 'false'}"
+        >
+            ${escapeHtml(gender)}
+        </button>
+    `).join('');
 }
 
 function getWorldview(story) {
@@ -1037,7 +1056,7 @@ function hideSetup() {
 function getCharacterDraft() {
     return {
         name: qs('#dd_detail_name')?.value?.trim() || qs('#dd_name')?.value?.trim() || '',
-        gender: document.querySelector('.dd-gender.active')?.dataset.gender || '男',
+        gender: normalizeGender(document.querySelector('.dd-gender.active')?.dataset.gender),
         custom: {},
     };
 }
@@ -1218,6 +1237,12 @@ function renderStoryDetail(story) {
             <section class="dd-start-panel">
                 <label for="dd_detail_name">昵称</label>
                 <input id="dd_detail_name" type="text" value="${escapeHtml(saved.character?.name || '')}" placeholder="输入你在故事里的名字">
+                <div class="dd-field-group">
+                    <span>性别</span>
+                    <div class="dd-gender-group" role="group" aria-label="用户性别">
+                        ${renderGenderOptions(saved.character?.gender)}
+                    </div>
+                </div>
                 <button id="dd_start_detail" class="dd-primary">开始体验</button>
             </section>
         </section>
@@ -1225,6 +1250,15 @@ function renderStoryDetail(story) {
 
     qs('#dd_back_library')?.addEventListener('click', showLibrary);
     qs('#dd_start_detail')?.addEventListener('click', () => startStory(story));
+    document.querySelectorAll('.dd-gender').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.dd-gender').forEach(item => {
+                const isActive = item === button;
+                item.classList.toggle('active', isActive);
+                item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+        });
+    });
     qs('#dd_detail_name')?.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -1386,10 +1420,11 @@ function startStory(story) {
     render();
 
     const name = state.character.name || '未命名';
+    const gender = state.character.gender || '男';
     if (story.is_custom) {
-        sendAction(`开始自定义 DayDreamer 故事：${story.opening}。角色昵称：${name}。请根据这个设定生成第一幕，直接进入事件现场。`);
+        sendAction(`开始自定义 DayDreamer 故事：${story.opening}。角色昵称：${name}。角色性别：${gender}。请根据这个设定生成第一幕，直接进入事件现场。`);
     } else {
-        sendAction(`开始 DayDreamer 预设故事《${story.title}》。角色昵称：${name}。${story.role_prompt ? `${story.role_prompt}。` : ''}请根据当前剧本生成第一幕，直接进入事件现场。`);
+        sendAction(`开始 DayDreamer 预设故事《${story.title}》。角色昵称：${name}。角色性别：${gender}。${story.role_prompt ? `${story.role_prompt}。` : ''}请根据当前剧本生成第一幕，直接进入事件现场。`);
     }
 }
 
