@@ -10,6 +10,7 @@ import {
 } from './context-loader.js';
 
 const MAX_MESSAGE_LENGTH = 4000;
+const DAYDREAM_MIN_RESPONSE_TOKENS = 4096;
 
 function compact(value, fallback) {
     if (value === undefined || value === null) {
@@ -156,7 +157,7 @@ export function buildSystemSections({ story, state, uiProfiles, corePrompt, turn
             mapping: uiMapping,
         }, null, 2),
         '',
-        '[DayDreamer Output Contract] Visible text must output title, environment, plot, and options first. State changes, people/relationships, resources, events, foreshadows, editable world book entries, and stat updates must be written to the ending <!-- DayDreamer_META ... --> JSON comment block. Only update keys visible in top_stats. Write durable generated lore to world_entries as objects with title, keys, content, and enabled.',
+        '[DayDreamer Output Contract] Visible text must output exactly these sections in order: 【标题】, 【环境】, 【剧情】, 【选项】. Keep 【剧情】 concise enough that the four options and metadata are never omitted. State changes, people/relationships, resources, events, foreshadows, editable world book entries, and stat updates must be written to the ending <!-- DAYDREAM_META ... --> JSON comment block. Only update keys visible in top_stats. Write durable generated lore to world_entries as objects with title, keys, content, and enabled.',
         '',
         turnPrompt,
         isEnding ? `\n${endingPrompt}` : '',
@@ -182,6 +183,11 @@ export function buildMessages({ systemContent, requestHistory, stChatMessages, m
 export function buildProviderBody(settings, messages, fallbackProvider) {
     const oai = settings.oai_settings ?? {};
     const provider = getProviderSummaryFromSettings(settings, fallbackProvider);
+    const configuredMaxTokens = Number(oai.openai_max_tokens ?? fallbackProvider.responseTokens ?? DAYDREAM_MIN_RESPONSE_TOKENS);
+    const maxTokens = Math.max(
+        Number.isFinite(configuredMaxTokens) ? configuredMaxTokens : DAYDREAM_MIN_RESPONSE_TOKENS,
+        DAYDREAM_MIN_RESPONSE_TOKENS,
+    );
 
     return {
         chat_completion_source: provider.chat_completion_source,
@@ -193,7 +199,7 @@ export function buildProviderBody(settings, messages, fallbackProvider) {
         top_k: oai.top_k_openai ?? 0,
         presence_penalty: oai.pres_pen_openai ?? 0,
         frequency_penalty: oai.freq_pen_openai ?? 0,
-        max_tokens: oai.openai_max_tokens ?? fallbackProvider.responseTokens ?? 1200,
+        max_tokens: maxTokens,
         reverse_proxy: oai.reverse_proxy ?? '',
         proxy_password: oai.proxy_password ?? '',
         custom_url: oai.custom_url ?? '',

@@ -34,6 +34,7 @@ const ENDING_PROMPT_PATH = path.join(DayDreamer_DIR, 'prompts', 'ending.md');
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const DEFAULT_MODEL = 'gpt-4o-mini';
 const MAX_MESSAGE_LENGTH = 4000;
+const DAYDREAM_MIN_RESPONSE_TOKENS = 4096;
 const CUSTOM_STORY_MAX_LENGTH = 2000;
 const CUSTOM_STORY_ROUTES = new Set([
     'general_story',
@@ -64,7 +65,7 @@ function getFallbackProviderConfig() {
     const baseUrl = process.env.DayDreamer_BASE_URL || process.env.DAYDREAM_BASE_URL || getConfigValue('DayDreamer.baseUrl', DEFAULT_BASE_URL);
     const model = process.env.DayDreamer_MODEL || process.env.DAYDREAM_MODEL || getConfigValue('DayDreamer.model', DEFAULT_MODEL);
     const enabled = Boolean(apiKey) && getConfigValue('DayDreamer.enabled', true, 'boolean');
-    const responseTokens = Number(process.env.DayDreamer_RESPONSE_TOKENS || process.env.DAYDREAM_RESPONSE_TOKENS || getConfigValue('DayDreamer.responseTokens', 1200, 'number'));
+    const responseTokens = Number(process.env.DayDreamer_RESPONSE_TOKENS || process.env.DAYDREAM_RESPONSE_TOKENS || getConfigValue('DayDreamer.responseTokens', DAYDREAM_MIN_RESPONSE_TOKENS, 'number'));
 
     return {
         configured: enabled,
@@ -72,7 +73,7 @@ function getFallbackProviderConfig() {
         apiKey,
         baseUrl: String(baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, ''),
         model: String(model || DEFAULT_MODEL),
-        responseTokens: Number.isFinite(responseTokens) ? responseTokens : 1200,
+        responseTokens: Number.isFinite(responseTokens) ? Math.max(responseTokens, DAYDREAM_MIN_RESPONSE_TOKENS) : DAYDREAM_MIN_RESPONSE_TOKENS,
         chat_completion_source: 'openai',
     };
 }
@@ -418,7 +419,7 @@ async function dispatchFallbackProvider(provider, messages, response) {
             model: provider.model,
             messages,
             temperature: 0.85,
-            max_tokens: provider.responseTokens,
+            max_tokens: Math.max(Number(provider.responseTokens || 0), DAYDREAM_MIN_RESPONSE_TOKENS),
             stream: true,
         }),
     });

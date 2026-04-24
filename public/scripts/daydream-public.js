@@ -6,6 +6,8 @@ import EventSourceStream from './sse-core-stream.js';
 
 const STORAGE_KEY = 'DayDreamer_public_state_v1';
 const HISTORY_KEY = 'DayDreamer_public_history_v1';
+const NAVIGATION_STATE_KEY = 'DayDreamer_public_navigation_v1';
+const WECHAT_GROUP_QR_SRC = '/img/daydream/wechat-group-qr.png';
 const MAX_VISIBLE_HISTORY = 0;
 
 const SPACETIME_TAGS = ['历史现实', '当代现实', '近未来科幻', '远未来星际', '架空古代', '奇幻异界', '末日废土', '校园都市', '多元宇宙'];
@@ -89,6 +91,7 @@ let currentView = null;
 let libraryFilters = { spacetime: '', theme: '' };
 let selectedStoryDraft = null;
 let customStoryRequestId = 0;
+let hasShownWechatGroupOnEntry = false;
 
 function qs(selector) {
     return document.querySelector(selector);
@@ -110,6 +113,99 @@ function hashString(value) {
 function compactText(value, maxLength = 42) {
     const text = String(value ?? '').replace(/\s+/g, ' ').trim();
     return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function createNavigationState(view, story = null) {
+    const state = {
+        app: NAVIGATION_STATE_KEY,
+        view,
+    };
+
+    if (story) {
+        state.storyId = story.id ?? null;
+        if (story.is_custom) {
+            state.storyDraft = story;
+        }
+    }
+
+    return state;
+}
+
+function writeNavigationHistory(view, story = null, mode = 'push') {
+    if (!mode || !window.history?.pushState) {
+        return;
+    }
+
+    const state = createNavigationState(view, story);
+    const currentState = window.history.state;
+    const isSameView = currentState?.app === NAVIGATION_STATE_KEY
+        && currentState.view === state.view
+        && String(currentState.storyId ?? '') === String(state.storyId ?? '');
+    const method = mode === 'replace' || isSameView ? 'replaceState' : 'pushState';
+    const title = story?.title ? `${story.title} - DayDreamer` : 'DayDreamer';
+
+    window.history[method](state, title);
+}
+
+function getCurrentNavigationState() {
+    if (currentView === 'detail') {
+        return createNavigationState('detail', selectedStoryDraft);
+    }
+
+    if (currentView === 'custom') {
+        return createNavigationState('custom');
+    }
+
+    if (currentView === 'library') {
+        return createNavigationState('library');
+    }
+
+    return createNavigationState('play');
+}
+
+function replaceCurrentNavigationHistory() {
+    if (!window.history?.replaceState) {
+        return;
+    }
+
+    window.history.replaceState(getCurrentNavigationState(), 'DayDreamer');
+}
+
+function findStoryFromNavigationState(navState) {
+    if (navState?.storyDraft) {
+        return navState.storyDraft;
+    }
+
+    if (navState?.storyId !== undefined && navState?.storyId !== null) {
+        return stories.find(story => Number(story.id) === Number(navState.storyId)) ?? null;
+    }
+
+    return selectedStoryDraft;
+}
+
+function renderNavigationState(navState) {
+    if (navState?.app !== NAVIGATION_STATE_KEY) {
+        return;
+    }
+
+    if (navState.view === 'detail') {
+        renderStoryDetail(findStoryFromNavigationState(navState), { historyMode: null });
+        return;
+    }
+
+    if (navState.view === 'custom') {
+        renderCustomBuilder({ historyMode: null });
+        return;
+    }
+
+    if (navState.view === 'play') {
+        currentView = null;
+        selectedStoryDraft = null;
+        render();
+        return;
+    }
+
+    showLibrary({ historyMode: null });
 }
 
 function classifySpacetime(story) {
@@ -445,11 +541,11 @@ function render() {
     const story = getStory(state);
 
     if (currentView === 'detail' && selectedStoryDraft) {
-        return renderStoryDetail(selectedStoryDraft);
+        return renderStoryDetail(selectedStoryDraft, { historyMode: null });
     }
 
     if (currentView === 'custom') {
-        return renderCustomBuilder();
+        return renderCustomBuilder({ historyMode: null });
     }
 
     if (currentView === 'library' || !story) {
@@ -1053,6 +1149,39 @@ function hideSetup() {
     qs('#dd_modal').innerHTML = '';
 }
 
+function showWechatGroupModal() {
+    qs('#dd_modal').hidden = false;
+    qs('#dd_modal').innerHTML = `
+        <div class="dd-dialog dd-wechat-dialog">
+            <button id="dd_close_wechat_group" class="dd-dialog-close" title="关闭" aria-label="关闭">×</button>
+            <h2>微信交流群</h2>
+            <p>扫码加入 DayDreamer 玩家交流群</p>
+            <div class="dd-wechat-qr-wrap">
+                <img
+                    class="dd-wechat-qr"
+                    src="${escapeHtml(WECHAT_GROUP_QR_SRC)}"
+                    alt="DayDreamer 微信交流群二维码"
+                    onerror="this.hidden=true;this.nextElementSibling.hidden=false"
+                >
+                <div class="dd-wechat-qr-missing" hidden>二维码图片待配置</div>
+            </div>
+            <button id="dd_wechat_group_confirm" class="dd-primary dd-wechat-confirm">我知道了，开始体验</button>
+        </div>
+    `;
+
+    qs('#dd_close_wechat_group')?.addEventListener('click', hideSetup);
+    qs('#dd_wechat_group_confirm')?.addEventListener('click', hideSetup);
+}
+
+function showWechatGroupOnEntry() {
+    if (hasShownWechatGroupOnEntry || currentView !== 'library') {
+        return;
+    }
+
+    hasShownWechatGroupOnEntry = true;
+    window.setTimeout(showWechatGroupModal, 250);
+}
+
 function getCharacterDraft() {
     return {
         name: qs('#dd_detail_name')?.value?.trim() || qs('#dd_name')?.value?.trim() || '',
@@ -1166,9 +1295,11 @@ function renderLibrary() {
     });
 }
 
-function showLibrary() {
+function showLibrary(options = {}) {
+    const { historyMode = 'push' } = options;
     currentView = 'library';
     renderLibrary();
+    writeNavigationHistory('library', null, historyMode);
 }
 
 function pickRandomStory() {
@@ -1178,7 +1309,7 @@ function pickRandomStory() {
 
 function showRandomStoryDetail() {
     const story = pickRandomStory();
-    if (story) renderStoryDetail(story);
+    if (story) renderStoryDetail(story, { historyMode: 'push' });
 }
 
 function getStoryInfoRows(story) {
@@ -1190,12 +1321,14 @@ function getStoryInfoRows(story) {
     ];
 }
 
-function renderStoryDetail(story) {
+function renderStoryDetail(story, options = {}) {
+    const { historyMode = 'push' } = options;
     if (!story) return renderLibrary();
     currentView = 'detail';
     selectedStoryDraft = story;
     hideSetup();
     renderHeader(story.title || '故事详情', story.story_class || '世界引擎', 'preplay');
+    writeNavigationHistory('detail', story, historyMode);
 
     const saved = loadState();
     const detailImage = String(story?.detail_image || '').trim();
@@ -1248,7 +1381,7 @@ function renderStoryDetail(story) {
         </section>
     `;
 
-    qs('#dd_back_library')?.addEventListener('click', showLibrary);
+    qs('#dd_back_library')?.addEventListener('click', () => showLibrary({ historyMode: 'replace' }));
     qs('#dd_start_detail')?.addEventListener('click', () => startStory(story));
     document.querySelectorAll('.dd-gender').forEach(button => {
         button.addEventListener('click', () => {
@@ -1267,11 +1400,13 @@ function renderStoryDetail(story) {
     });
 }
 
-function renderCustomBuilder() {
+function renderCustomBuilder(options = {}) {
+    const { historyMode = 'push' } = options;
     currentView = 'custom';
     selectedStoryDraft = null;
     hideSetup();
     renderHeader('自定义游戏', '把一个设定变成可玩的世界', 'preplay');
+    writeNavigationHistory('custom', null, historyMode);
 
     qs('#dd_content').innerHTML = `
         <section class="dd-custom-builder">
@@ -1283,7 +1418,7 @@ function renderCustomBuilder() {
         </section>
     `;
 
-    qs('#dd_back_library')?.addEventListener('click', showLibrary);
+    qs('#dd_back_library')?.addEventListener('click', () => showLibrary({ historyMode: 'replace' }));
     qs('#dd_build_custom')?.addEventListener('click', () => {
         const text = qs('#dd_custom_text')?.value?.trim();
         if (!text) return;
@@ -1418,6 +1553,7 @@ function startStory(story) {
     selectedStoryDraft = null;
     activeTab = 'story';
     render();
+    writeNavigationHistory('play', null, 'replace');
 
     const name = state.character.name || '未命名';
     const gender = state.character.gender || '男';
@@ -1434,17 +1570,17 @@ function getSection(text, label) {
 
 function stripDayDreamerMeta(text) {
     return String(text ?? '')
-        .replace(/<!--\s*DayDreamer_META[\s\S]*?-->/gi, '')
-        .replace(/<!--\s*DayDreamer_META[\s\S]*$/i, '')
-        .replace(/<DayDreamer_meta\b[\s\S]*?<\/DayDreamer_meta>/gi, '')
-        .replace(/<DayDreamer_meta\b[\s\S]*$/i, '')
+        .replace(/<!--\s*(?:DAYDREAM|DayDreamer)_META[\s\S]*?-->/gi, '')
+        .replace(/<!--\s*(?:DAYDREAM|DayDreamer)_META[\s\S]*$/i, '')
+        .replace(/<(?:daydream|DayDreamer)_meta\b[\s\S]*?<\/(?:daydream|DayDreamer)_meta>/gi, '')
+        .replace(/<(?:daydream|DayDreamer)_meta\b[\s\S]*$/i, '')
         .trim();
 }
 
 function parseDayDreamerMeta(text) {
     const source = String(text ?? '');
-    const raw = source.match(/<!--\s*DayDreamer_META\s*([\s\S]*?)\s*-->/i)?.[1]?.trim()
-        ?? source.match(/<DayDreamer_meta\b[^>]*>([\s\S]*?)<\/DayDreamer_meta>/i)?.[1]?.trim();
+    const raw = source.match(/<!--\s*(?:DAYDREAM|DayDreamer)_META\s*([\s\S]*?)\s*-->/i)?.[1]?.trim()
+        ?? source.match(/<(?:daydream|DayDreamer)_meta\b[^>]*>([\s\S]*?)<\/(?:daydream|DayDreamer)_meta>/i)?.[1]?.trim();
     if (!raw) return null;
 
     try {
@@ -1981,8 +2117,27 @@ sendAction = async function (text) {
     }
 };
 
+function showLibraryFromHeader() {
+    if (currentView === 'library') {
+        return;
+    }
+
+    const historyMode = currentView === 'detail' || currentView === 'custom' ? 'replace' : 'push';
+    showLibrary({ historyMode });
+}
+
+qs('#dd_home_link').addEventListener('click', showLibraryFromHeader);
+qs('#dd_home_link').addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+    }
+
+    event.preventDefault();
+    showLibraryFromHeader();
+});
+qs('#dd_open_wechat_group').addEventListener('click', showWechatGroupModal);
 qs('#dd_quick_random').addEventListener('click', showRandomStoryDetail);
-qs('#dd_quick_custom').addEventListener('click', renderCustomBuilder);
+qs('#dd_quick_custom').addEventListener('click', () => renderCustomBuilder());
 qs('#dd_open_setup').addEventListener('click', showSetup);
 qs('#dd_send_action').addEventListener('click', () => selectAction(qs('#dd_custom_action').value));
 qs('#dd_custom_action').addEventListener('keydown', event => {
@@ -1991,10 +2146,15 @@ qs('#dd_custom_action').addEventListener('keydown', event => {
         selectAction(qs('#dd_custom_action').value);
     }
 });
+window.addEventListener('popstate', event => {
+    renderNavigationState(event.state);
+});
 
 try {
     await bootstrap();
     render();
+    replaceCurrentNavigationHistory();
+    showWechatGroupOnEntry();
 } catch (error) {
     renderError(`DayDreamer 启动失败：${error.message}`);
 }

@@ -81,6 +81,13 @@ button {
     align-items: center;
     gap: 6px;
     margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.dd-brand:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 4px;
+    border-radius: 8px;
 }
 
 .dd-brand-name {
@@ -161,6 +168,31 @@ button {
 
 .dd-preplay .dd-content {
     padding-top: 10px;
+}
+
+.dd-preplay .dd-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding-bottom: 14px;
+}
+
+.dd-preplay .dd-header-actions {
+    width: 100%;
+    grid-auto-flow: column;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.dd-preplay .dd-top-action {
+    min-height: 42px;
+    padding-inline: 8px;
+    font-size: 13px;
+}
+
+.dd-preplay .dd-header h1 {
+    max-width: 100%;
+    white-space: normal;
 }
 
 .dd-stats {
@@ -437,6 +469,45 @@ button {
     margin: 0 0 18px;
     text-align: center;
     color: var(--muted);
+}
+
+.dd-wechat-dialog {
+    text-align: center;
+}
+
+.dd-wechat-qr-wrap {
+    display: grid;
+    place-items: center;
+    min-height: 260px;
+}
+
+.dd-wechat-qr {
+    width: min(100%, 260px);
+    aspect-ratio: 1;
+    object-fit: contain;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid rgba(47, 111, 100, 0.22);
+    border-radius: 8px;
+}
+
+.dd-wechat-qr-missing {
+    display: grid;
+    width: min(100%, 260px);
+    aspect-ratio: 1;
+    place-items: center;
+    padding: 20px;
+    color: var(--muted);
+    background: rgba(47, 111, 100, 0.08);
+    border: 1px dashed rgba(47, 111, 100, 0.32);
+    border-radius: 8px;
+    font-weight: 800;
+}
+
+.dd-wechat-confirm {
+    width: min(100%, 260px);
+    margin-top: 16px;
+    padding: 0 18px;
 }
 
 .dd-dialog label {
@@ -1160,6 +1231,18 @@ button {
         min-height: 32px;
         padding-inline: 8px;
         font-size: 11px;
+    }
+
+    .dd-preplay .dd-header-actions {
+        grid-auto-flow: column;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .dd-preplay .dd-top-action {
+        min-height: 40px;
+        font-size: 12px;
+        white-space: normal;
     }
 
     .dd-header h1 {

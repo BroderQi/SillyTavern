@@ -413,6 +413,45 @@ Suggested metadata keys:
 - Reloading a DayDreamer session restores story state, people, world book entries, resources, events, and visible stats
 - No ST chat transcript is created or appended during normal DayDreamer generation
 
+### Deferred retention plan
+
+This is a planning note only. Do not implement it until session listing, archive, and SillyTavern chat-storage migration decisions are clearer.
+
+Current retention target:
+
+- Keep DayDreamer session files updated within the last 90 days.
+- Keep at most 10 DayDreamer sessions per user.
+- Delete old files under each user's `DayDreamer-sessions/*.json` directory using the session file's `updated_at` timestamp.
+
+Recommended cleanup behavior:
+
+- Add a dedicated cleanup module, for example `src/DayDreamer-st/session-cleanup.js`.
+- Scan the current user's `DayDreamer-sessions` directory.
+- Parse each `*.json` file and read `updated_at`.
+- Delete sessions older than 90 days.
+- For the remaining sessions, sort by `updated_at` descending and keep only the newest 10.
+- Skip malformed JSON files and log a warning rather than deleting them automatically.
+- Accept a `protectedSessionId` so the currently loaded or currently saved session is never deleted during that cleanup pass.
+
+Recommended triggers:
+
+- Run cleanup opportunistically for the current user during `/api/DayDreamer/bootstrap`.
+- Run cleanup after `/api/DayDreamer/session/save`.
+- Later, add a daily server timer if user-directory enumeration is safe and inexpensive.
+
+Recommended configuration:
+
+- `DAYDREAM_SESSION_RETENTION_DAYS=90`
+- `DAYDREAM_SESSION_MAX_PER_USER=10`
+- `DAYDREAM_SESSION_CLEANUP_INTERVAL_HOURS=24`
+
+Future archive compatibility:
+
+- Treat the lightweight DayDreamer session JSON as an index record, not the final long-term transcript store.
+- Preserve enough metadata for a future save-list UI: `session_id`, `created_at`, `updated_at`, `story_id`, `story_title`, character summary, and `last_reply_preview`.
+- When DayDreamer moves toward SillyTavern chat persistence, store the full chat transcript in ST chat storage and keep the DayDreamer session as a lightweight pointer plus state snapshot.
+- Do not delete linked ST chat files automatically until there is a clear product decision. A later cleanup policy can choose between deleting only the DayDreamer index or deleting both the index and the linked ST chat.
+
 ## Phase 7: Optional Advanced Features
 
 ### Candidate features
