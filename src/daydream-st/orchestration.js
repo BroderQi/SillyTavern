@@ -80,7 +80,9 @@ export async function assembleDayDreamerGeneration(request, payload, session, op
         ...stData.resolvedContext,
         chat_name: chatBinding.chat_name || stData.resolvedContext.chat_name || stContext.chat_name || '',
     };
-    const requestHistory = normalizeHistoryItems(payload.history);
+    const requestHistory = normalizeHistoryItems(
+        Array.isArray(payload.history) && payload.history.length ? payload.history : session?.history,
+    );
     const promptPayload = assemblePromptPayload({
         story: options.story,
         state: payload.state ?? {},

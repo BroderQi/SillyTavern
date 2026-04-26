@@ -8,7 +8,8 @@ const STORAGE_KEY = 'DayDreamer_public_state_v1';
 const HISTORY_KEY = 'DayDreamer_public_history_v1';
 const NAVIGATION_STATE_KEY = 'DayDreamer_public_navigation_v1';
 const WECHAT_GROUP_QR_SRC = '/img/daydream/wechat-group-qr.png';
-const MAX_VISIBLE_HISTORY = 0;
+const MAX_VISIBLE_HISTORY = 8;
+const MAX_HISTORY_ITEM_LENGTH = 1800;
 
 const SPACETIME_TAGS = ['历史现实', '当代现实', '近未来科幻', '远未来星际', '架空古代', '奇幻异界', '末日废土', '校园都市', '多元宇宙'];
 const THEME_TAGS = ['权谋', '商战', '悬疑', '生存', '情感', '成长', '逆袭', '经营', '职场', '冒险', '战争', '校园', '医疗', '娱乐'];
@@ -389,13 +390,40 @@ function saveState(state) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+function normalizeHistory(history) {
+    return (Array.isArray(history) ? history : [])
+        .filter(item => item && ['user', 'assistant'].includes(item.role) && item.content)
+        .map(item => ({
+            role: item.role,
+            content: String(item.content).replace(/\s+/g, ' ').trim().slice(0, MAX_HISTORY_ITEM_LENGTH),
+        }))
+        .filter(item => item.content)
+        .slice(-MAX_VISIBLE_HISTORY);
+}
+
+function loadHistory() {
+    try {
+        return normalizeHistory(JSON.parse(localStorage.getItem(HISTORY_KEY)));
+    } catch {
+        return [];
+    }
+}
+
 function saveHistory(history) {
     if (MAX_VISIBLE_HISTORY <= 0) {
         localStorage.removeItem(HISTORY_KEY);
         return;
     }
 
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-MAX_VISIBLE_HISTORY)));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(normalizeHistory(history)));
+}
+
+function appendTurnHistory(history, userText, assistantText) {
+    return normalizeHistory([
+        ...normalizeHistory(history),
+        { role: 'user', content: userText },
+        { role: 'assistant', content: stripDayDreamerMeta(assistantText) },
+    ]);
 }
 
 async function fetchSession(sessionId) {
@@ -450,7 +478,7 @@ async function restoreSessionFromServer() {
     };
 
     saveState(restoredState);
-    saveHistory([]);
+    saveHistory(session.history ?? []);
 }
 
 async function syncSession(state, history = []) {
@@ -468,7 +496,7 @@ async function syncSession(state, history = []) {
             session_id: state.session_id,
             st_context: createDefaultStContext(),
             state,
-            history: [],
+            history: normalizeHistory(history),
         }),
     }).catch(() => null);
 
@@ -1875,6 +1903,7 @@ let sendAction = async function (text) {
     if (activeTab === 'story') renderStreamingReply(story, '');
 
     let completed = false;
+    const history = loadHistory();
     try {
         const response = await fetch('/api/DayDreamer/generate', {
             method: 'POST',
@@ -1889,7 +1918,7 @@ let sendAction = async function (text) {
                 story,
                 state,
                 message,
-                history: [],
+                history,
             }),
         });
         if (!response.ok) {
@@ -1928,9 +1957,10 @@ let sendAction = async function (text) {
         }
 
         state.st_context = createDefaultStContext();
-        saveHistory([]);
+        const nextHistory = appendTurnHistory(history, message, data.text);
+        saveHistory(nextHistory);
         saveState(state);
-        await syncSession(state, []).catch(() => null);
+        await syncSession(state, nextHistory).catch(() => null);
         if (activeTab === 'story') render();
         else renderShell(profile, state);
         completed = true;
@@ -2042,6 +2072,7 @@ sendAction = async function (text) {
     if (activeTab === 'story') renderStreamingReply(story, '');
 
     let completed = false;
+    const history = loadHistory();
     try {
         const response = await fetch('/api/DayDreamer/generate', {
             method: 'POST',
@@ -2056,7 +2087,7 @@ sendAction = async function (text) {
                 story,
                 state,
                 message,
-                history: [],
+                history,
             }),
         });
         if (!response.ok) {
@@ -2096,9 +2127,10 @@ sendAction = async function (text) {
         }
 
         state.st_context = createDefaultStContext();
-        saveHistory([]);
+        const nextHistory = appendTurnHistory(history, message, data.text);
+        saveHistory(nextHistory);
         saveState(state);
-        await syncSession(state, []).catch(() => null);
+        await syncSession(state, nextHistory).catch(() => null);
         if (activeTab === 'story') render();
         else renderShell(profile, state);
         completed = true;

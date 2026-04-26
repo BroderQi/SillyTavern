@@ -27,7 +27,7 @@ export async function persistDayDreamerTurn(request, session, payload, { assista
     return saveSession(request.user.directories, {
         ...session,
         state: payload?.state ?? session.state,
-        history: [],
+        history: payload?.history ?? session.history ?? [],
         chat_metadata: buildLightweightMetadata(session, payload, assistantText),
         st_summary: {
             ...(session.st_summary ?? {}),

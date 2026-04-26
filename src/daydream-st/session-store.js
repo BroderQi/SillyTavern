@@ -4,6 +4,8 @@ import crypto from 'node:crypto';
 
 const SESSIONS_DIR_NAME = 'DayDreamer-sessions';
 const SESSION_ID_PATTERN = /^[a-z0-9-]{8,128}$/i;
+const MAX_SESSION_HISTORY_ITEMS = 12;
+const MAX_SESSION_HISTORY_TEXT = 4000;
 
 function getSessionsDirectory(directories) {
     return path.join(directories.root, SESSIONS_DIR_NAME);
@@ -23,11 +25,21 @@ function isValidSessionId(sessionId) {
     return typeof sessionId === 'string' && SESSION_ID_PATTERN.test(sessionId);
 }
 
+function normalizeSessionHistory(history) {
+    return (Array.isArray(history) ? history : [])
+        .filter(item => item && ['user', 'assistant'].includes(item.role) && item.content)
+        .map(item => ({
+            role: item.role,
+            content: String(item.content).slice(0, MAX_SESSION_HISTORY_TEXT),
+        }))
+        .slice(-MAX_SESSION_HISTORY_ITEMS);
+}
+
 function createDefaultSession(sessionId, seed = {}) {
     const now = new Date().toISOString();
     const stContext = { ...(seed?.st_context ?? {}) };
     const state = { ...(seed?.state ?? {}) };
-    const history = [];
+    const history = normalizeSessionHistory(seed?.history);
     const session = {
         session_id: sessionId,
         created_at: now,
@@ -120,6 +132,6 @@ export function upsertSession(directories, sessionId, updater = {}) {
             ...(session.state ?? {}),
             ...(updater?.state ?? {}),
         },
-        history: [],
+        history: normalizeSessionHistory(updater?.history ?? session.history),
     });
 }

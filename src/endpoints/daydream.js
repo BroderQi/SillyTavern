@@ -112,6 +112,24 @@ function compact(value, fallback) {
     return value;
 }
 
+function stripDayDreamerMeta(text) {
+    return String(text ?? '')
+        .replace(/<!--\s*(?:DAYDREAM|DayDreamer)_META[\s\S]*?-->/gi, '')
+        .replace(/<!--\s*(?:DAYDREAM|DayDreamer)_META[\s\S]*$/i, '')
+        .replace(/<(?:daydream|DayDreamer)_meta\b[\s\S]*?<\/(?:daydream|DayDreamer)_meta>/gi, '')
+        .replace(/<(?:daydream|DayDreamer)_meta\b[\s\S]*$/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function appendTurnHistory(history, userText, assistantText) {
+    return [
+        ...(Array.isArray(history) ? history : []),
+        { role: 'user', content: compact(userText, '') },
+        { role: 'assistant', content: stripDayDreamerMeta(assistantText).slice(0, MAX_MESSAGE_LENGTH) },
+    ].filter(item => item.content);
+}
+
 function extractAssistantText(payload) {
     const choice = payload?.choices?.[0];
     return choice?.message?.content ?? choice?.delta?.content ?? choice?.text ?? '';
@@ -340,7 +358,7 @@ function getProductTabs(profile) {
 
 function buildFallbackMessages({ body, story, uiProfiles, corePrompt, turnPrompt, endingPrompt }) {
     const state = body.state ?? {};
-    const history = [];
+    const history = Array.isArray(body.history) ? body.history : [];
     const message = compact(body.message, '');
     const isEnding = /^\s*(结束|end)\s*$/i.test(message);
     const baseProfile = getBaseProfile(uiProfiles);
@@ -383,6 +401,8 @@ function buildFallbackMessages({ body, story, uiProfiles, corePrompt, turnPrompt
             pending_foreshadows: state.pending_foreshadows ?? [],
             active_hooks: state.active_hooks ?? [],
             important_branches: state.important_branches ?? [],
+            last_scene: state.last_scene ?? null,
+            last_status_text: state.last_status_text ?? '',
             last_options: Array.isArray(state.last_options) ? state.last_options : [],
             near_ending: state.near_ending ?? false,
             visible_stats: visibleStats,
@@ -393,6 +413,15 @@ function buildFallbackMessages({ body, story, uiProfiles, corePrompt, turnPrompt
             top_stats: visibleStats,
             tabs: getProductTabs(profile).map(tab => ({ key: tab.key, label: tab.label })),
         }, null, 2),
+        '',
+        '[DayDreamer Continuity Contract]',
+        [
+            '- Treat Current State and recent chat history as canonical continuity.',
+            '- Do not rename existing characters, classmates, teams, places, seats, possessions, or relationships unless the user explicitly changes them or the story reveals an intentional alias.',
+            '- If a person already exists in relationships, keep that exact name and role. If a new important person appears, add a stable relationships record in DAYDREAM_META.',
+            '- Preserve concrete scene facts from the previous turn, especially location, seating, companions, injuries, resources, promises, and unresolved actions.',
+            '- When a new durable fact appears in visible prose, register it in DAYDREAM_META as relationships, events, resources, active_hooks, pending_foreshadows, important_branches, or world_entries so it survives later turns.',
+        ].join('\n'),
         '',
         turnPrompt,
         isEnding ? `\n${endingPrompt}` : '',
@@ -489,7 +518,7 @@ router.post('/session/create', (request, response) => {
     const session = createSession(request.user.directories, {
         st_context: request.body?.st_context ?? {},
         state: request.body?.state ?? {},
-        history: [],
+        history: request.body?.history ?? [],
     });
 
     response.json(session);
@@ -529,7 +558,7 @@ router.post('/session/save', (request, response) => {
     const session = upsertSession(request.user.directories, request.body?.session_id, {
         st_context: request.body?.st_context ?? {},
         state: request.body?.state ?? {},
-        history: [],
+        history: request.body?.history ?? [],
     });
 
     response.json(session);
@@ -607,7 +636,7 @@ router.post('/generate', async (request, response) => {
             session = upsertSession(request.user.directories, body.session_id, {
                 st_context: body.st_context ?? {},
                 state: body.state ?? {},
-                history: [],
+                history: body.history ?? [],
             });
             response.setHeader('X-DayDreamer-Session-Id', session.session_id);
         }
@@ -626,7 +655,7 @@ router.post('/generate', async (request, response) => {
                 ...session,
                 st_context: generation.st_context,
                 state: body.state ?? session.state,
-                history: [],
+                history: body.history ?? session.history ?? [],
                 st_summary: generation.st_summary,
                 story_id: body.state?.story_id ?? story?.id ?? session.story_id,
                 character_avatar: generation.st_context.avatar_url ?? session.character_avatar,
@@ -672,10 +701,11 @@ router.post('/generate', async (request, response) => {
                     }
 
                     try {
+                        const turnHistory = appendTurnHistory(body.history ?? session.history, body.message, text);
                         const persisted = await persistDayDreamerTurn(
                             request,
                             session,
-                            { ...body, story },
+                            { ...body, story, history: turnHistory },
                             generation,
                             text,
                         );
@@ -686,7 +716,7 @@ router.post('/generate', async (request, response) => {
                             chat_metadata: persisted.chatMetadata ?? session.chat_metadata,
                             st_context: persisted.st_context ?? generation.st_context,
                             state: body.state ?? persisted.state,
-                            history: [],
+                            history: turnHistory,
                             st_summary: generation.st_summary,
                             story_id: body.state?.story_id ?? story?.id ?? persisted.story_id,
                             character_avatar: persisted.st_context?.avatar_url ?? generation.st_context.avatar_url ?? persisted.character_avatar,

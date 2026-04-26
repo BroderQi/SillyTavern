@@ -207,6 +207,8 @@ export function buildStateBlock(story, state, profile) {
         pending_foreshadows: state.pending_foreshadows ?? [],
         active_hooks: state.active_hooks ?? [],
         important_branches: state.important_branches ?? [],
+        last_scene: state.last_scene ?? null,
+        last_status_text: state.last_status_text ?? '',
         last_options: Array.isArray(state.last_options) ? state.last_options : [],
         near_ending: state.near_ending ?? false,
         visible_stats: visibleStats,
